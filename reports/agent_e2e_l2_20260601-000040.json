@@ -1,0 +1,1678 @@
+{
+  "meta": {
+    "generated_at": "2026-05-31T16:00:42.286983+00:00",
+    "model": "glm-4.5-air",
+    "llm_react": "0",
+    "llm_reflect": "0",
+    "router_build_id": "2026-05-31-six-agents-v1"
+  },
+  "summary": {
+    "tier": "preview",
+    "passed": 56,
+    "failed": 7,
+    "skipped": 2,
+    "rate": 0.8889,
+    "by_tag": {
+      "scheduling": {
+        "pass": 6,
+        "fail": 4,
+        "skip": 2
+      },
+      "l2": {
+        "pass": 56,
+        "fail": 7,
+        "skip": 2
+      },
+      "slow": {
+        "pass": 0,
+        "fail": 0,
+        "skip": 2
+      },
+      "persist": {
+        "pass": 1,
+        "fail": 0,
+        "skip": 0
+      },
+      "events": {
+        "pass": 13,
+        "fail": 1,
+        "skip": 0
+      },
+      "guard": {
+        "pass": 3,
+        "fail": 0,
+        "skip": 0
+      },
+      "plans": {
+        "pass": 10,
+        "fail": 0,
+        "skip": 0
+      },
+      "kitting": {
+        "pass": 5,
+        "fail": 1,
+        "skip": 0
+      },
+      "commitment": {
+        "pass": 6,
+        "fail": 0,
+        "skip": 0
+      },
+      "whatif": {
+        "pass": 4,
+        "fail": 1,
+        "skip": 0
+      },
+      "adversarial": {
+        "pass": 12,
+        "fail": 0,
+        "skip": 0
+      }
+    }
+  },
+  "results": [
+    {
+      "case_id": "L2-SCH-01",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 64877.9,
+      "tags": [
+        "scheduling",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-02",
+      "ok": false,
+      "tier": "preview",
+      "message": "tools 缺少: 期望包含 ['scheduling.parse_intent', 'scheduling.run'], 实际 ['scheduling.list_catalog']",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.list_catalog"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 54471.0,
+      "tags": [
+        "scheduling",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-03",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_SLOW 未开启（慢用例）",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "scheduling",
+        "l2",
+        "slow"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-04",
+      "ok": false,
+      "tier": "preview",
+      "message": "tools 缺少: 期望包含 ['scheduling.parse_intent', 'scheduling.run'], 实际 ['scheduling.ask_clarification']",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.ask_clarification"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 44155.9,
+      "tags": [
+        "scheduling",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-05",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "rule",
+        "tools": [
+          "scheduling.ask_clarification"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 40152.5,
+      "tags": [
+        "scheduling",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-06",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_SLOW 未开启（慢用例）",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "scheduling",
+        "l2",
+        "slow"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-07",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 55092.6,
+      "tags": [
+        "scheduling",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-08",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.list_catalog"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 35518.4,
+      "tags": [
+        "scheduling",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-09",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "data.load_plan",
+          "scheduling.parse_intent",
+          "scheduling.run",
+          "delivery.assess",
+          "data.propose_persist"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 65723.4,
+      "tags": [
+        "scheduling",
+        "l2",
+        "persist"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-10",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run",
+          "delivery.assess",
+          "data.propose_persist"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 14632.0,
+      "tags": [
+        "scheduling",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-11",
+      "ok": false,
+      "tier": "preview",
+      "message": "超时: 95886.2ms > 90000.0ms",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 95886.2,
+      "tags": [
+        "scheduling",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-SCH-12",
+      "ok": false,
+      "tier": "preview",
+      "message": "tools 缺少: 期望包含 ['scheduling.parse_intent', 'scheduling.run'], 实际 ['scheduling.ask_clarification']",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "explicit",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.ask_clarification"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 26592.1,
+      "tags": [
+        "scheduling",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-01",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 18800.9,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-02",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 14830.6,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-03",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 16230.5,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-04",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 16714.7,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-05",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 15752.8,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-06",
+      "ok": false,
+      "tier": "preview",
+      "message": "agent: 期望 events, 实际 plans; tools 缺少: 期望包含 ['events.list_event_types'], 实际 ['data.list_plans']",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.list_plans"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 19836.1,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-07",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 15401.3,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-08",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "rule_override",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 27887.3,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-09",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "rule_override",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 13906.2,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-10",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 16831.8,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-11",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 14454.2,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-12",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 45454.6,
+      "tags": [
+        "events",
+        "l2",
+        "guard"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-13",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 17817.6,
+      "tags": [
+        "events",
+        "l2",
+        "guard"
+      ]
+    },
+    {
+      "case_id": "L2-EVT-14",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 16076.9,
+      "tags": [
+        "events",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-01",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.create_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 11763.2,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-02",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.list_plans"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 13601.8,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-03",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.bind_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 15354.6,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-04",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.bind_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 15716.0,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-05",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.rename_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 19313.2,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-06",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.duplicate_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 59693.2,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-07",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.update_status"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 14400.3,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-08",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.delete_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 16986.8,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-09",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.create_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 28695.4,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-PLN-10",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.bind_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 26750.8,
+      "tags": [
+        "plans",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-KIT-01",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "kitting",
+        "router": "llm",
+        "router_intent": "kitting",
+        "plan_planner": "llm",
+        "tools": [
+          "material.check_static",
+          "kitting.build_report"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 31212.6,
+      "tags": [
+        "kitting",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-KIT-02",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "kitting",
+        "router": "llm",
+        "router_intent": "kitting",
+        "plan_planner": "llm",
+        "tools": [
+          "material.check_static",
+          "kitting.build_report"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 14874.4,
+      "tags": [
+        "kitting",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-KIT-03",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "kitting",
+        "router": "llm",
+        "router_intent": "kitting",
+        "plan_planner": "llm",
+        "tools": [
+          "material.check_static",
+          "material.compute_delays",
+          "kitting.build_report"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 20950.6,
+      "tags": [
+        "kitting",
+        "l2",
+        "guard"
+      ]
+    },
+    {
+      "case_id": "L2-KIT-04",
+      "ok": false,
+      "tier": "preview",
+      "message": "agent: 期望 kitting, 实际 scheduling; 超时: 111020.8ms > 90000.0ms",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 111020.8,
+      "tags": [
+        "kitting",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-KIT-05",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "kitting",
+        "router": "llm",
+        "router_intent": "kitting",
+        "plan_planner": "llm",
+        "tools": [
+          "material.check_static",
+          "kitting.build_report"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 16016.2,
+      "tags": [
+        "kitting",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-KIT-06",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "kitting",
+        "router": "llm",
+        "router_intent": "kitting",
+        "plan_planner": "llm",
+        "tools": [
+          "material.check_static",
+          "kitting.build_report"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 14366.8,
+      "tags": [
+        "kitting",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-CMT-01",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "router": "llm",
+        "router_intent": "commitment",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.run",
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 12702.2,
+      "tags": [
+        "commitment",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-CMT-02",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "router": "llm",
+        "router_intent": "commitment",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.run",
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 10292.3,
+      "tags": [
+        "commitment",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-CMT-03",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "router": "llm",
+        "router_intent": "commitment",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.run",
+          "delivery.assess"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 14331.7,
+      "tags": [
+        "commitment",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-CMT-04",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "router": "llm",
+        "router_intent": "commitment",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.run",
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 16548.3,
+      "tags": [
+        "commitment",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-CMT-05",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "router": "llm",
+        "router_intent": "commitment",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.run",
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 13352.4,
+      "tags": [
+        "commitment",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-CMT-06",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "router": "llm",
+        "router_intent": "commitment",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.run",
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 10228.5,
+      "tags": [
+        "commitment",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-WIF-01",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "whatif",
+        "router": "llm",
+        "router_intent": "whatif",
+        "plan_planner": "llm",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 9633.0,
+      "tags": [
+        "whatif",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-WIF-02",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "whatif",
+        "router": "llm",
+        "router_intent": "whatif",
+        "plan_planner": "llm",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 10413.2,
+      "tags": [
+        "whatif",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-WIF-03",
+      "ok": false,
+      "tier": "preview",
+      "message": "agent: 期望 whatif, 实际 scheduling; tools 缺少: 期望包含 ['compare.variants'], 实际 ['scheduling.parse_intent', 'scheduling.run']",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 33510.8,
+      "tags": [
+        "whatif",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-WIF-04",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "whatif",
+        "router": "llm",
+        "router_intent": "whatif",
+        "plan_planner": "llm",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 10601.5,
+      "tags": [
+        "whatif",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-WIF-05",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "whatif",
+        "router": "llm",
+        "router_intent": "whatif",
+        "plan_planner": "llm",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 10605.6,
+      "tags": [
+        "whatif",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-01",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.create_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 10840.0,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-02",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 35324.1,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-03",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 10443.0,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-04",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 9125.5,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-05",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "kitting",
+        "router": "llm",
+        "router_intent": "kitting",
+        "plan_planner": "llm",
+        "tools": [
+          "material.check_static",
+          "material.compute_delays",
+          "kitting.build_report"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 15630.2,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-06",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "router": "llm",
+        "router_intent": "commitment",
+        "plan_planner": "llm",
+        "tools": [
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 9627.5,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-07",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "data.load_plan",
+          "scheduling.parse_intent",
+          "scheduling.run",
+          "delivery.assess",
+          "data.propose_persist"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 31836.9,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-08",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.list_plans"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 11665.0,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-09",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "whatif",
+        "router": "llm",
+        "router_intent": "whatif",
+        "plan_planner": "llm",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 14744.8,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-10",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "kitting",
+        "router": "llm",
+        "router_intent": "kitting",
+        "plan_planner": "llm",
+        "tools": [
+          "material.check_static"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 19899.0,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-11",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 11829.6,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-12",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run",
+          "delivery.assess",
+          "data.propose_persist"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 9651.1,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    }
+  ]
+}

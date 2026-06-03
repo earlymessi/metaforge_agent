@@ -1,0 +1,333 @@
+{
+  "meta": {
+    "generated_at": "2026-05-31T15:32:55.029928+00:00",
+    "model": "glm-4.5-air",
+    "llm_react": "0",
+    "llm_reflect": "0",
+    "router_build_id": "2026-05-31-six-agents-v1"
+  },
+  "summary": {
+    "tier": "preview",
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0,
+    "rate": 1.0,
+    "by_tag": {
+      "adversarial": {
+        "pass": 12,
+        "fail": 0,
+        "skip": 0
+      },
+      "l2": {
+        "pass": 12,
+        "fail": 0,
+        "skip": 0
+      }
+    }
+  },
+  "results": [
+    {
+      "case_id": "L2-ADV-01",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.create_plan"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 14240.8,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-02",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 45467.6,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-03",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 16178.8,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-04",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 11960.3,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-05",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "kitting",
+        "router": "llm",
+        "router_intent": "kitting",
+        "plan_planner": "llm",
+        "tools": [
+          "material.check_static",
+          "material.compute_delays",
+          "kitting.build_report"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 38062.7,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-06",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "router": "llm",
+        "router_intent": "commitment",
+        "plan_planner": "llm",
+        "tools": [
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 17193.9,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-07",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "data.load_plan",
+          "scheduling.parse_intent",
+          "scheduling.run",
+          "delivery.assess",
+          "data.propose_persist"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 29895.0,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-08",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "plans",
+        "router": "llm",
+        "router_intent": "plans",
+        "plan_planner": "rule",
+        "tools": [
+          "data.list_plans"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 13688.7,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-09",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "whatif",
+        "router": "llm",
+        "router_intent": "whatif",
+        "plan_planner": "llm",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 13097.2,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-10",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "kitting",
+        "router": "llm",
+        "router_intent": "kitting",
+        "plan_planner": "llm",
+        "tools": [
+          "material.check_static",
+          "kitting.build_report"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 20341.0,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-11",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "router": "llm",
+        "router_intent": "reschedule",
+        "plan_planner": "rule",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 15684.4,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    },
+    {
+      "case_id": "L2-ADV-12",
+      "ok": true,
+      "tier": "preview",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "router": "llm",
+        "router_intent": "schedule",
+        "plan_planner": "llm",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run",
+          "delivery.assess",
+          "data.propose_persist"
+        ],
+        "error": ""
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 13221.0,
+      "tags": [
+        "adversarial",
+        "l2"
+      ]
+    }
+  ]
+}

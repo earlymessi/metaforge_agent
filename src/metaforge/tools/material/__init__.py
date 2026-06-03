@@ -1,0 +1,7 @@
+from metaforge.tools.material.check_static import register_material_check_static_tool
+from metaforge.tools.material.compute_delays import register_material_compute_delays_tool
+from metaforge.tools.material.predict import register_material_predict_tool
+
+register_material_check_static_tool()
+register_material_compute_delays_tool()
+register_material_predict_tool()

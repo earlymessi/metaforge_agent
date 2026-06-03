@@ -1,88 +1,135 @@
 import random
-import math
+import time
+import numpy as np
 from metaforge.core.base_solver import BaseSolver
+from metaforge.utils.multiobjective_eval import evaluate_sequence_multiobjective
+
 
 class AntColonySolver(BaseSolver):
-    def __init__(self, problem, num_ants=10, alpha=1.0, beta=2.0, evaporation=0.5, Q=100, iterations=100):
+    def __init__(self, problem, num_ants=15, iterations=50, alpha=1.0, beta=2.0, evaporation=0.5, Q=100):
         super().__init__(problem)
         self.num_ants = num_ants
-        self.alpha = alpha            # Influence of pheromone
-        self.beta = beta              # Influence of heuristic (1/distance)
-        self.evaporation = evaporation
-        self.Q = Q                    # Pheromone deposit factor
         self.iterations = iterations
-
-        self.job_counts = [len(job.tasks) for job in self.problem.jobs]  # ✅ Refactored
+        self.alpha = alpha
+        self.beta = beta
+        self.evaporation = evaporation
+        self.Q = Q
+        self.job_counts = [len(job.tasks) for job in problem.jobs]
         self.total_ops = sum(self.job_counts)
-        self.pheromone = [[1.0] * self.total_ops for _ in range(self.total_ops)]
 
-    def generate_initial_sequence(self):
-        base = []
-        for job_idx, count in enumerate(self.job_counts):
-            base += [job_idx] * count
-        return base
+        # 信息素矩阵 (节点i到节点j)
+        # 简化版：这里 pheromone[i][j] 代表上一个选了 Job i, 下一个选 Job j 的倾向
+        self.pheromone = np.ones((len(problem.jobs), len(problem.jobs)))
+
+    def _evaluate_weighted(self, sequence):
+        job_ptr = [0] * self.problem.num_jobs
+        job_ready = [0] * self.problem.num_jobs
+        machine_ready = [0] * self.problem.num_machines
+        for job_idx in sequence:
+            if job_ptr[job_idx] >= self.job_counts[job_idx]: continue
+            task = self.problem.jobs[job_idx].tasks[job_ptr[job_idx]]
+            start = max(machine_ready[task.machine_id], job_ready[job_idx])
+            end = start + task.duration
+            job_ready[job_idx] = end
+            machine_ready[task.machine_id] = end
+            job_ptr[job_idx] += 1
+        makespan = max(machine_ready)
+        penalty = sum(job_ready[j] * self.problem.jobs[j].priority * 5.0 for j in range(self.problem.num_jobs))
+        return makespan + penalty, makespan
 
     def construct_solution(self):
-        base = self.generate_initial_sequence()
-        solution = []
-        unvisited = list(range(len(base)))
-        visited_counts = {i: 0 for i in range(self.problem.num_jobs)}
+        sequence = []
+        job_ptr = [0] * len(self.job_counts)
+        last_job = -1  # Start node
 
-        current = random.choice(unvisited)
-        solution.append(base[current])
-        unvisited.remove(current)
-        visited_counts[base[current]] += 1
+        for _ in range(self.total_ops):
+            available = [j for j in range(len(self.job_counts)) if job_ptr[j] < self.job_counts[j]]
 
-        while unvisited:
-            probabilities = []
-            for j in unvisited:
-                from_idx = len(solution) - 1
-                to_idx = j
-                tau = self.pheromone[from_idx][to_idx] ** self.alpha
-                eta = (1.0 / (visited_counts[base[j]] + 1)) ** self.beta
-                probabilities.append(tau * eta)
+            probs = []
+            for job_idx in available:
+                # 1. Pheromone
+                tau = self.pheromone[last_job][job_idx] if last_job != -1 else 1.0
 
-            total = sum(probabilities)
-            probabilities = [p / total for p in probabilities]
+                # 2. Heuristic (Eta) - 关键修改
+                # 传统 ACO: eta = 1 / duration
+                # 优先级 ACO: eta = Priority * (1 / duration)
+                # 优先级越高，eta 越大，被选概率越大
+                task = self.problem.jobs[job_idx].tasks[job_ptr[job_idx]]
+                prio = self.problem.jobs[job_idx].priority
+                eta = (prio ** 2) * (1.0 / (task.duration + 1.0))
 
-            next_index = random.choices(unvisited, weights=probabilities, k=1)[0]
-            solution.append(base[next_index])
-            visited_counts[base[next_index]] += 1
-            unvisited.remove(next_index)
+                probs.append((tau ** self.alpha) * (eta ** self.beta))
 
-        return solution
+            total = sum(probs)
+            if total == 0:
+                probs = [1 / len(probs)] * len(probs)
+            else:
+                probs = [p / total for p in probs]
 
-    def run(self, track_history=True, track_schedule=False):
+            # 轮盘赌选择
+            selected = random.choices(available, weights=probs, k=1)[0]
+            sequence.append(selected)
+            job_ptr[selected] += 1
+            last_job = selected
+
+        return sequence
+
+    def run(self, track_history=True, weights=None, resource_config=None, **kwargs):
+        start_time = time.time()
         best_solution = None
-        best_score = float("inf")
-        history = [] if track_history else None
-        all_schedules = [] if track_schedule else None
+        best_weighted = float('inf')
+        best_makespan = float('inf')
+        history = []
+        use_multiobjective = bool(weights)
 
         for _ in range(self.iterations):
-            ants = [self.construct_solution() for _ in range(self.num_ants)]
-            scores = [self.problem.evaluate(a) for a in ants]
+            ants_solutions = []
 
-            # Update best
-            for sol, score in zip(ants, scores):
-                if score < best_score:
-                    best_solution = sol
-                    best_score = score
+            # 1. 蚂蚁构造解
+            for _ in range(self.num_ants):
+                sol = self.construct_solution()
+                if use_multiobjective:
+                    w_score, mkspan, _ = evaluate_sequence_multiobjective(
+                        self.problem,
+                        sol,
+                        weights=weights,
+                        resource_config=resource_config,
+                    )
+                    w_score = float(w_score)
+                    mkspan = float(mkspan)
+                else:
+                    w_score, mkspan = self._evaluate_weighted(sol)
+                ants_solutions.append((sol, w_score, mkspan))
 
-            if track_history:
-                history.append(best_score)
-            if track_schedule:
-                all_schedules.append(self.problem.get_schedule(best_solution[:]))
+                if w_score < best_weighted:
+                    best_weighted = w_score
+                    best_solution = sol[:]
+                    best_makespan = mkspan
 
-            # Pheromone evaporation
-            for i in range(len(self.pheromone)):
-                for j in range(len(self.pheromone[i])):
-                    self.pheromone[i][j] *= (1 - self.evaporation)
+            if track_history: history.append(best_makespan)
 
-            # Pheromone deposit
-            for sol, score in zip(ants, scores):
-                for i in range(len(sol) - 1):
-                    from_idx = i
-                    to_idx = i + 1
-                    self.pheromone[from_idx][to_idx] += self.Q / score
+            # 2. 信息素蒸发
+            self.pheromone *= (1 - self.evaporation)
 
-        return best_solution, best_score, history, all_schedules
+            # 3. 信息素更新 (精英蚂蚁)
+            # 只有本轮表现好的蚂蚁才能留下信息素
+            ants_solutions.sort(key=lambda x: x[1])  # 按加权分排序
+            elite_ants = ants_solutions[:3]  # 取前3名
+
+            for sol, w_score, _ in elite_ants:
+                deposit = self.Q / w_score  # 分数越低(越好)，留下的越多
+                last_j = -1
+                for curr_j in sol:
+                    if last_j != -1:
+                        self.pheromone[last_j][curr_j] += deposit
+                    last_j = curr_j
+
+        runtime = time.time() - start_time
+        return {
+            "algorithm": "ACO (Priority)",
+            "best_score": int(best_makespan),
+            "best_solution": best_solution,
+            "runtime_sec": round(runtime, 4),
+            "history": history,
+            "gantt_data": self.problem.get_schedule(best_solution)
+        }

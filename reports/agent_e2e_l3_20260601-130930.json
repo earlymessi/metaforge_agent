@@ -1,0 +1,1825 @@
+{
+  "meta": {
+    "generated_at": "2026-06-01T05:09:32.466008+00:00",
+    "model": "glm-4.5-air",
+    "llm_react": "0",
+    "llm_reflect": "0",
+    "router_build_id": "2026-05-31-six-agents-v1"
+  },
+  "summary": {
+    "tier": "exec",
+    "passed": 32,
+    "failed": 19,
+    "skipped": 14,
+    "rate": 0.6275,
+    "by_tag": {
+      "scheduling": {
+        "pass": 7,
+        "fail": 3,
+        "skip": 2
+      },
+      "l3": {
+        "pass": 32,
+        "fail": 19,
+        "skip": 14
+      },
+      "slow": {
+        "pass": 0,
+        "fail": 0,
+        "skip": 2
+      },
+      "persist": {
+        "pass": 0,
+        "fail": 3,
+        "skip": 0
+      },
+      "deterministic": {
+        "pass": 1,
+        "fail": 0,
+        "skip": 0
+      },
+      "events": {
+        "pass": 14,
+        "fail": 0,
+        "skip": 0
+      },
+      "guard": {
+        "pass": 2,
+        "fail": 1,
+        "skip": 0
+      },
+      "plans": {
+        "pass": 0,
+        "fail": 0,
+        "skip": 10
+      },
+      "mongo": {
+        "pass": 0,
+        "fail": 0,
+        "skip": 12
+      },
+      "kitting": {
+        "pass": 0,
+        "fail": 6,
+        "skip": 0
+      },
+      "commitment": {
+        "pass": 3,
+        "fail": 3,
+        "skip": 0
+      },
+      "multi_turn": {
+        "pass": 4,
+        "fail": 3,
+        "skip": 0
+      },
+      "whatif": {
+        "pass": 2,
+        "fail": 3,
+        "skip": 0
+      },
+      "adversarial": {
+        "pass": 6,
+        "fail": 4,
+        "skip": 2
+      }
+    }
+  },
+  "results": [
+    {
+      "case_id": "L3-SCH-01",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "排程完成：最优 禁忌搜索，完工时间 7.0。策略「交付优先」。请点击「查看分析报表」查看甘特图与指标。",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results",
+          "llm_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 91990.1,
+      "tags": [
+        "scheduling",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-02",
+      "ok": false,
+      "tier": "exec",
+      "message": "agent: 期望 scheduling, 实际 whatif",
+      "detail": {
+        "agent_id": "whatif",
+        "status": "success",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": "",
+        "summary_zh": "推荐方案「遗传算法」（best_score=9.0000），最优算法 spt。 各方案 makespan 差异不足 1%，方案差异不显著。（方案差异不显著，可任选其一。）",
+        "artifact_keys": [
+          "what_if",
+          "schedule_results",
+          "llm_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 23178.1,
+      "tags": [
+        "scheduling",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-03",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_SLOW 未开启（慢用例）",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "scheduling",
+        "l3",
+        "slow"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-04",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "排程完成：最优 禁忌搜索，完工时间 7.0。策略「交付优先」。请点击「查看分析报表」查看甘特图与指标。",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results",
+          "llm_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 87829.3,
+      "tags": [
+        "scheduling",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-05",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "已在 9 种非 RL 算法中对比（业务目标：最少拖期/交期违约）。按综合评分最优：禁忌搜索（7.94）。策略「交付优先」用于求解过程加权。业务目标：最少拖期/交期违约（命中：一）；策略「交付优先」用于多目标加权；已在 9 种非 RL 算法中",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results",
+          "llm_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 42335.2,
+      "tags": [
+        "scheduling",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-06",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_SLOW 未开启（慢用例）",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "scheduling",
+        "l3",
+        "slow"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-07",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "排程完成：最优 最短加工时间优先，完工时间 9.0。策略「综合平衡」。请点击「查看分析报表」查看甘特图与指标。",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results",
+          "llm_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 59900.8,
+      "tags": [
+        "scheduling",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-08",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.list_catalog"
+        ],
+        "error": "",
+        "summary_zh": "当前可用 6 种策略、14 个求解器，可在排程中心选择后执行。",
+        "artifact_keys": [
+          "scheduling_catalog"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 91718.5,
+      "tags": [
+        "scheduling",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-09",
+      "ok": false,
+      "tier": "exec",
+      "message": "status: 期望 ['success', 'pending_confirm', 'need_input'], 实际 failed; plan 失败步: [{'step_id': 's4', 'tool': 'data.propose_persist', 'params': {}, 'optional': False, 'status': 'failed', 'duration_ms': 0.0, 'error': 'plan_id required'}]; plan_id required",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "failed",
+        "tools": [
+          "data.load_plan",
+          "scheduling.parse_intent",
+          "scheduling.run",
+          "delivery.assess",
+          "data.propose_persist"
+        ],
+        "error": "plan_id required",
+        "summary_zh": "",
+        "artifact_keys": [
+          "loaded_plan",
+          "interpretation",
+          "schedule_results",
+          "delivery_assessment",
+          "delivery_predictions"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 65259.9,
+      "tags": [
+        "scheduling",
+        "l3",
+        "persist"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-10",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "已在 8 种非 RL 算法中对比（业务目标：最少拖期/交期违约）。按综合评分最优：最短加工时间优先（0.00）。策略「交付优先」用于求解过程加权。用户明确指定交付优先策略。规则启发式不保证全局最优，已全量对比后选取。请点击「查看分析报表」查",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results",
+          "llm_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 81801.4,
+      "tags": [
+        "scheduling",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-11",
+      "ok": false,
+      "tier": "exec",
+      "message": "agent: 期望 scheduling, 实际 whatif",
+      "detail": {
+        "agent_id": "whatif",
+        "status": "success",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": "",
+        "summary_zh": "推荐方案「禁忌搜索」（best_score=9.0000），最优算法 spt。 各方案 makespan 差异不足 1%，方案差异不显著。（方案差异不显著，可任选其一。）",
+        "artifact_keys": [
+          "what_if",
+          "schedule_results",
+          "llm_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 21648.9,
+      "tags": [
+        "scheduling",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-SCH-12",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "排程完成：最优 最短加工时间优先，完工时间 9.0。请点击「查看分析报表」查看甘特图与指标。",
+        "artifact_keys": [
+          "schedule_results",
+          "llm_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 39131.6,
+      "tags": [
+        "scheduling",
+        "l3",
+        "deterministic"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-01",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "3号机故障 0.0–4.0h（冻结时刻 0.0h）。原计划(R0) makespan=8.0；不重排(R1)=8.0；重排(R2,ts)=8.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 27760.7,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-02",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "need_input",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job"
+        ],
+        "error": "",
+        "summary_zh": "紧急插单\n插单「急单」还缺少以下信息，请在本对话中补充（可一次说全，也可分多条）：\n• 工序：每道加工机台（如 3号机→机台ID 2）与时长（如 5小时）\n\n示例：「3号机5小时，优先级100」或「2道工序：3号机5h + 4号机3h」",
+        "artifact_keys": [
+          "production_execution",
+          "insert_job_intake",
+          "event_envelope"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 60500.8,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-03",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：due_date_change。受影响工单数：0，最大完工推迟：0.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "updated_jobs",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 34206.2,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-04",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：planned_downtime。受影响工单数：2，最大完工推迟：8.0。交期承诺变化：工单A 预计完工 8.0 → 16.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 42726.0,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-05",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：priority_change。受影响工单数：0，最大完工推迟：0.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 40473.2,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-06",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "events.list_event_types"
+        ],
+        "error": "",
+        "summary_zh": "支持的事件类型：插单、设备故障、改交期、计划停机、物料晚到、调整优先级 等。",
+        "artifact_keys": [
+          "event_type_catalog"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 132569.2,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-07",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：material_delay。受影响工单数：2，最大完工推迟：24.0。交期承诺变化：工单A 预计完工 8.0 → 32.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 43558.3,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-08",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：order_cancel。受影响工单数：0，最大完工推迟：0.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 17270.3,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-09",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：quantity_change。受影响工单数：0，最大完工推迟：0.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 25139.8,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-10",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "need_input",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job"
+        ],
+        "error": "",
+        "summary_zh": "客户插单J005交期后天\n插单「J005」还缺少以下信息，请在本对话中补充（可一次说全，也可分多条）：\n• 工序：每道加工机台（如 3号机→机台ID 2）与时长（如 5小时）\n\n示例：「3号机5小时，优先级100」或「2道工序：3号机5h ",
+        "artifact_keys": [
+          "production_execution",
+          "insert_job_intake",
+          "event_envelope"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 51087.4,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-11",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：planned_downtime。受影响工单数：2，最大完工推迟：1.0。交期承诺变化：工单A 预计完工 8.0 → 9.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 30235.8,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-12",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "3号机故障 0.0–4.0h（冻结时刻 0.0h）。原计划(R0) makespan=8.0；不重排(R1)=8.0；重排(R2,ts)=8.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 130063.5,
+      "tags": [
+        "events",
+        "l3",
+        "guard"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-13",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：due_date_change。受影响工单数：0，最大完工推迟：0.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "updated_jobs",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1442.0,
+      "tags": [
+        "events",
+        "l3",
+        "guard"
+      ]
+    },
+    {
+      "case_id": "L3-EVT-14",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：due_date_change。受影响工单数：0，最大完工推迟：0.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "updated_jobs",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1364.1,
+      "tags": [
+        "events",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-01",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-02",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-03",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-04",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-05",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-06",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-07",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-08",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-09",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-PLN-10",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "plans",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-KIT-01",
+      "ok": false,
+      "tier": "exec",
+      "message": "Event loop is closed; agent: 期望 kitting, 实际 None; status: 期望 success, 实际 None",
+      "detail": {
+        "agent_id": null,
+        "status": null,
+        "tools": [],
+        "error": "Event loop is closed",
+        "summary_zh": "",
+        "artifact_keys": []
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 839.6,
+      "tags": [
+        "kitting",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-KIT-02",
+      "ok": false,
+      "tier": "exec",
+      "message": "Event loop is closed; agent: 期望 kitting, 实际 None; status: 期望 success, 实际 None",
+      "detail": {
+        "agent_id": null,
+        "status": null,
+        "tools": [],
+        "error": "Event loop is closed",
+        "summary_zh": "",
+        "artifact_keys": []
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 856.2,
+      "tags": [
+        "kitting",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-KIT-03",
+      "ok": false,
+      "tier": "exec",
+      "message": "Event loop is closed; agent: 期望 kitting, 实际 None; status: 期望 success, 实际 None",
+      "detail": {
+        "agent_id": null,
+        "status": null,
+        "tools": [],
+        "error": "Event loop is closed",
+        "summary_zh": "",
+        "artifact_keys": []
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 923.9,
+      "tags": [
+        "kitting",
+        "l3",
+        "guard"
+      ]
+    },
+    {
+      "case_id": "L3-KIT-04",
+      "ok": false,
+      "tier": "exec",
+      "message": "Event loop is closed; agent: 期望 kitting, 实际 None; status: 期望 success, 实际 None",
+      "detail": {
+        "agent_id": null,
+        "status": null,
+        "tools": [],
+        "error": "Event loop is closed",
+        "summary_zh": "",
+        "artifact_keys": []
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 816.3,
+      "tags": [
+        "kitting",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-KIT-05",
+      "ok": false,
+      "tier": "exec",
+      "message": "agent: 期望 kitting, 实际 scheduling",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "排程完成：最优 禁忌搜索，完工时间 7.0。策略「综合平衡」。请点击「查看分析报表」查看甘特图与指标。",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 2448.6,
+      "tags": [
+        "kitting",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-KIT-06",
+      "ok": false,
+      "tier": "exec",
+      "message": "Event loop is closed; agent: 期望 kitting, 实际 None; status: 期望 success, 实际 None",
+      "detail": {
+        "agent_id": null,
+        "status": null,
+        "tools": [],
+        "error": "Event loop is closed",
+        "summary_zh": "",
+        "artifact_keys": []
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 887.5,
+      "tags": [
+        "kitting",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-CMT-01",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "status": "success",
+        "tools": [
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": "",
+        "summary_zh": "共 3 单：可满足 3 单，高风险 0 单。",
+        "artifact_keys": [
+          "schedule_results",
+          "llm_summary",
+          "delivery_assessment",
+          "delivery_predictions",
+          "customer_script"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1363.8,
+      "tags": [
+        "commitment",
+        "l3",
+        "multi_turn"
+      ]
+    },
+    {
+      "case_id": "L3-CMT-02",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "status": "success",
+        "tools": [
+          "delivery.assess"
+        ],
+        "error": "",
+        "summary_zh": "共 3 单：可满足 3 单，高风险 0 单。",
+        "artifact_keys": [
+          "schedule_results",
+          "llm_summary",
+          "delivery_assessment",
+          "delivery_predictions",
+          "customer_script"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1422.4,
+      "tags": [
+        "commitment",
+        "l3",
+        "multi_turn"
+      ]
+    },
+    {
+      "case_id": "L3-CMT-03",
+      "ok": false,
+      "tier": "exec",
+      "message": "agent: 期望 commitment, 实际 scheduling",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "已在 9 种非 RL 算法中对比（业务目标：最少拖期/交期违约）。按综合评分最优：禁忌搜索（7.94）。策略「交付优先」用于求解过程加权。业务目标：最少拖期/交期违约（命中：交付）；策略「交付优先」用于多目标加权；已在 9 种非 RL 算法",
+        "artifact_keys": [
+          "schedule_results",
+          "llm_summary",
+          "delivery_assessment",
+          "delivery_predictions",
+          "customer_script",
+          "interpretation"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 2580.3,
+      "tags": [
+        "commitment",
+        "l3",
+        "multi_turn"
+      ]
+    },
+    {
+      "case_id": "L3-CMT-04",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "status": "success",
+        "tools": [
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": "",
+        "summary_zh": "算法：最短加工时间优先、最长加工时间优先、剩余工作量最大优先、剩余工序数最多优先、最早交期优先、禁忌搜索、遗传算法、模拟退火、蚁群算法；目标：交付优先；物料约束：开启；业务目标：最少拖期/交期违约（命中：交付）；策略「交付优先」用于多目标加",
+        "artifact_keys": [
+          "schedule_results",
+          "llm_summary",
+          "delivery_assessment",
+          "delivery_predictions",
+          "customer_script",
+          "interpretation"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1336.3,
+      "tags": [
+        "commitment",
+        "l3",
+        "multi_turn"
+      ]
+    },
+    {
+      "case_id": "L3-CMT-05",
+      "ok": false,
+      "tier": "exec",
+      "message": "agent: 期望 commitment, 实际 scheduling",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "排程完成：最优 禁忌搜索，完工时间 7.0。策略「综合平衡」。请点击「查看分析报表」查看甘特图与指标。",
+        "artifact_keys": [
+          "schedule_results",
+          "llm_summary",
+          "delivery_assessment",
+          "delivery_predictions",
+          "customer_script",
+          "interpretation"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 2421.1,
+      "tags": [
+        "commitment",
+        "l3",
+        "multi_turn"
+      ]
+    },
+    {
+      "case_id": "L3-CMT-06",
+      "ok": false,
+      "tier": "exec",
+      "message": "agent: 期望 commitment, 实际 scheduling",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "已在 9 种非 RL 算法中对比（业务目标：最少拖期/交期违约）。按综合评分最优：禁忌搜索（7.94）。策略「交付优先」用于求解过程加权。业务目标：最少拖期/交期违约（命中：交期）；策略「交付优先」用于多目标加权；已在 9 种非 RL 算法",
+        "artifact_keys": [
+          "schedule_results",
+          "llm_summary",
+          "delivery_assessment",
+          "delivery_predictions",
+          "customer_script",
+          "interpretation"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 2067.4,
+      "tags": [
+        "commitment",
+        "l3",
+        "multi_turn"
+      ]
+    },
+    {
+      "case_id": "L3-WIF-01",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "whatif",
+        "status": "success",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": "",
+        "summary_zh": "推荐方案「交付优先」（best_score=7.0000），最优算法 ts。 各方案 makespan 差异不足 1%，方案差异不显著。（方案差异不显著，可任选其一。）",
+        "artifact_keys": [
+          "what_if",
+          "schedule_results"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1692.8,
+      "tags": [
+        "whatif",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-WIF-02",
+      "ok": false,
+      "tier": "exec",
+      "message": "agent: 期望 whatif, 实际 scheduling",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "已在 9 种非 RL 算法中对比（业务目标：产能/吞吐优先）。按综合评分最优：禁忌搜索（15.50）。策略「吞吐优先」用于求解过程加权。业务目标：产能/吞吐优先（命中：产能）；策略「吞吐优先」用于多目标加权；已在 9 种非 RL 算法中对比",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 2582.3,
+      "tags": [
+        "whatif",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-WIF-03",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "whatif",
+        "status": "success",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": "",
+        "summary_zh": "推荐方案「交付优先」（best_score=7.0000），最优算法 ts。 各方案 makespan 差异不足 1%，方案差异不显著。（方案差异不显著，可任选其一。）",
+        "artifact_keys": [
+          "what_if",
+          "schedule_results"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1750.0,
+      "tags": [
+        "whatif",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-WIF-04",
+      "ok": false,
+      "tier": "exec",
+      "message": "agent: 期望 whatif, 实际 scheduling",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "已在 9 种非 RL 算法中对比（业务目标：综合最优）。按综合评分最优：禁忌搜索（10.34）。策略「综合平衡」用于求解过程加权。业务目标：综合最优；策略「综合平衡」用于多目标加权；已在 9 种非 RL 算法中对比，按综合评分选取最优（与报",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 2561.0,
+      "tags": [
+        "whatif",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-WIF-05",
+      "ok": false,
+      "tier": "exec",
+      "message": "agent: 期望 whatif, 实际 scheduling",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "已在 9 种非 RL 算法中对比（业务目标：最少拖期/交期违约）。按综合评分最优：禁忌搜索（7.94）。策略「交付优先」用于求解过程加权。业务目标：最少拖期/交期违约（命中：交付优先）；策略「交付优先」用于多目标加权；已在 9 种非 RL ",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 2567.4,
+      "tags": [
+        "whatif",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-01",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "adversarial",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-02",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "success",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run"
+        ],
+        "error": "",
+        "summary_zh": "排程完成：最优 禁忌搜索，完工时间 7.0。策略「综合平衡」。请点击「查看分析报表」查看甘特图与指标。",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 2524.6,
+      "tags": [
+        "adversarial",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-03",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "3号机故障 0.0–4.0h（冻结时刻 0.0h）。原计划(R0) makespan=8.0；不重排(R1)=8.0；重排(R2,ts)=8.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1325.8,
+      "tags": [
+        "adversarial",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-04",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "success",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job",
+          "events.reschedule",
+          "delivery.compare_commitment",
+          "delivery.explain_impact"
+        ],
+        "error": "",
+        "summary_zh": "事件类型：due_date_change。受影响工单数：0，最大完工推迟：0.0。",
+        "artifact_keys": [
+          "production_execution",
+          "event_envelope",
+          "schedule_results",
+          "impact_report",
+          "updated_jobs",
+          "impact_gantt",
+          "event_type",
+          "commitment_comparison",
+          "impact_summary"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1513.9,
+      "tags": [
+        "adversarial",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-05",
+      "ok": false,
+      "tier": "exec",
+      "message": "Event loop is closed; agent: 期望 kitting, 实际 None; status: 期望 success, 实际 None",
+      "detail": {
+        "agent_id": null,
+        "status": null,
+        "tools": [],
+        "error": "Event loop is closed",
+        "summary_zh": "",
+        "artifact_keys": []
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 893.9,
+      "tags": [
+        "adversarial",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-06",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "commitment",
+        "status": "success",
+        "tools": [
+          "delivery.assess",
+          "delivery.customer_script"
+        ],
+        "error": "",
+        "summary_zh": "算法：最短加工时间优先、最长加工时间优先、剩余工作量最大优先、剩余工序数最多优先、最早交期优先、禁忌搜索、遗传算法、模拟退火、蚁群算法；目标：交付优先；物料约束：开启；业务目标：最少拖期/交期违约（命中：交期）；策略「交付优先」用于多目标加",
+        "artifact_keys": [
+          "schedule_results",
+          "llm_summary",
+          "delivery_assessment",
+          "delivery_predictions",
+          "customer_script",
+          "interpretation"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1303.8,
+      "tags": [
+        "adversarial",
+        "l3",
+        "multi_turn"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-07",
+      "ok": false,
+      "tier": "exec",
+      "message": "status: 期望 ['success', 'pending_confirm', 'need_input'], 实际 failed; plan 失败步: [{'step_id': 'sp2', 'tool': 'data.propose_persist', 'params': {}, 'optional': False, 'status': 'failed', 'duration_ms': 0.01, 'error': 'plan_id required'}]; plan_id required",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "failed",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run",
+          "delivery.assess",
+          "data.propose_persist"
+        ],
+        "error": "plan_id required",
+        "summary_zh": "",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results",
+          "delivery_assessment",
+          "delivery_predictions"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1905.7,
+      "tags": [
+        "adversarial",
+        "l3",
+        "persist"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-08",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "AGENT_E2E_MONGO 未开启",
+      "elapsed_ms": 0.0,
+      "tags": [
+        "adversarial",
+        "l3",
+        "mongo"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-09",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "whatif",
+        "status": "success",
+        "tools": [
+          "compare.variants"
+        ],
+        "error": "",
+        "summary_zh": "推荐方案「交付优先」（best_score=7.0000），最优算法 ts。 各方案 makespan 差异不足 1%，方案差异不显著。（方案差异不显著，可任选其一。）",
+        "artifact_keys": [
+          "what_if",
+          "schedule_results"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1727.8,
+      "tags": [
+        "adversarial",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-10",
+      "ok": false,
+      "tier": "exec",
+      "message": "Event loop is closed; agent: 期望 kitting, 实际 None; status: 期望 success, 实际 None",
+      "detail": {
+        "agent_id": null,
+        "status": null,
+        "tools": [],
+        "error": "Event loop is closed",
+        "summary_zh": "",
+        "artifact_keys": []
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 950.5,
+      "tags": [
+        "adversarial",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-11",
+      "ok": true,
+      "tier": "exec",
+      "message": "",
+      "detail": {
+        "agent_id": "events",
+        "status": "need_input",
+        "tools": [
+          "execution.get_state",
+          "events.parse_event",
+          "events.check_insert_job"
+        ],
+        "error": "",
+        "summary_zh": "紧急插单工单 J005\n插单「工单」还缺少以下信息，请在本对话中补充（可一次说全，也可分多条）：\n• 工序：每道加工机台（如 3号机→机台ID 2）与时长（如 5小时）\n\n示例：「3号机5小时，优先级100」或「2道工序：3号机5h + 4",
+        "artifact_keys": [
+          "production_execution",
+          "insert_job_intake",
+          "event_envelope"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 2630.6,
+      "tags": [
+        "adversarial",
+        "l3"
+      ]
+    },
+    {
+      "case_id": "L3-ADV-12",
+      "ok": false,
+      "tier": "exec",
+      "message": "status: 期望 ['success', 'pending_confirm', 'need_input'], 实际 failed; plan 失败步: [{'step_id': 'sp2', 'tool': 'data.propose_persist', 'params': {}, 'optional': False, 'status': 'failed', 'duration_ms': 0.0, 'error': 'plan_id required'}]; plan_id required",
+      "detail": {
+        "agent_id": "scheduling",
+        "status": "failed",
+        "tools": [
+          "scheduling.parse_intent",
+          "scheduling.run",
+          "delivery.assess",
+          "data.propose_persist"
+        ],
+        "error": "plan_id required",
+        "summary_zh": "",
+        "artifact_keys": [
+          "interpretation",
+          "schedule_results",
+          "delivery_assessment",
+          "delivery_predictions"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": "",
+      "elapsed_ms": 1252.8,
+      "tags": [
+        "adversarial",
+        "l3",
+        "persist"
+      ]
+    }
+  ]
+}

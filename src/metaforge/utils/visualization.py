@@ -172,19 +172,23 @@ def plot_runtime_from_csv(csv_path, show=True, save_path=None):
 
 def plot_enhanced_dynamic_gantt(schedules_dict, problem, dynamic_events=None, initial_num_jobs=None, figsize=(20, 6)):
     """
-    【最终完整版 - 增强可读性】
-    绘制功能完备、用于决策分析的动态Gantt图。
-    此版本会在红色的延误条块上明确标注出是哪个订单发生了延误。
-    """
-    colors = plt.cm.get_cmap('tab20', 20)
+    绘制带有箭头注解和动态避让功能的高级动态甘特图。
 
+    此版本使用带箭头的注解来标识延误，并实现了标签的动态避让，
+    解决了多个延误在同一机器上时标签重叠的问题。图例位于图表右上角。
+    """
+    if not schedules_dict or all(not v for v in schedules_dict.values()):
+        print("Warning: No valid schedule data provided to plot.")
+        return
+
+    colors = plt.cm.get_cmap('tab20', 20)
     solver_names = list(schedules_dict.keys())
     n = len(solver_names)
     fig, axs = plt.subplots(n, 1, figsize=(figsize[0], figsize[1] * n), sharex=True, squeeze=False)
     axs = axs.flatten()
 
     final_num_jobs = initial_num_jobs
-    if dynamic_events:
+    if dynamic_events and initial_num_jobs is not None:
         final_num_jobs += sum(1 for e in dynamic_events if e['type'] == 'new_job_arrival')
 
     for idx, solver_name in enumerate(solver_names):
@@ -226,47 +230,55 @@ def plot_enhanced_dynamic_gantt(schedules_dict, problem, dynamic_events=None, in
         if dynamic_events:
             for event in dynamic_events:
                 if event['type'] == 'new_job_arrival':
-                    job = event['job']
-                    jobs_map[job.id] = job
+                    jobs_map[event['job'].id] = event['job']
 
-        # 步骤 2.1: 先绘制所有的交付日期虚线
+        y_max_limit = ax.get_ylim()[1]
         for job_id, job_obj in jobs_map.items():
             if hasattr(job_obj, 'due_date'):
                 due_date = job_obj.due_date
-                ax.axvline(x=job_obj.due_date, color='r', linestyle='--', linewidth=1.0, alpha=0.8)
-                # 【核心修改】在图表顶部，对应虚线的位置，添加旋转的文本标签
-                y_position_for_label = ax.get_ylim()[1]  # 获取图表Y轴的最高点
-                ax.text(due_date, y_position_for_label, f" J{job_id} Due",
-                        color='red',
-                        rotation=90,
-                        verticalalignment='top',  # 文本的顶部与y_position对齐
-                        fontsize=9)
+                ax.axvline(x=due_date, color='r', linestyle='--', linewidth=1.0, alpha=0.8)
+                ax.text(due_date, y_max_limit, f" J{job_id} Due",
+                        color='red', rotation=90, verticalalignment='top', fontsize=9)
 
-        # 步骤 2.2: 再绘制延误条块和标签
-        for job_id, completion_time in job_completion_times.items():
-            if job_id in jobs_map:
-                job_obj = jobs_map[job_id]
-                if hasattr(job_obj, 'due_date'):
-                    due_date = job_obj.due_date
+        tardy_label_y_offsets = {}
+        sorted_tardy_jobs = sorted(
+            [(job_id, comp_time) for job_id, comp_time in job_completion_times.items() if
+             job_id in jobs_map and comp_time > jobs_map[job_id].due_date],
+            key=lambda item: jobs_map.get(item[0], {}).due_date
+        )
 
-                    if completion_time > due_date:
-                        # 找到该延误订单的最后一个工序所在的机器
-                        last_op_machine = -2  # 使用一个不存在的机器ID作为初始值
-                        for op in reversed(schedule):
-                            if op['job'] == job_id and not op.get('is_outsourced'):
-                                last_op_machine = op['machine']
-                                break
+        for job_id, completion_time in sorted_tardy_jobs:
+            job_obj = jobs_map[job_id]
+            due_date = job_obj.due_date
+            last_op_machine = -2
+            for op in reversed(schedule):
+                if op['job'] == job_id and not op.get('is_outsourced'):
+                    last_op_machine = op['machine']
+                    break
 
-                        # 确保找到了机器才绘制
-                        if last_op_machine != -2:
-                            # 绘制红色延误条块
-                            ax.barh(last_op_machine, completion_time - due_date, left=due_date, color='red',
-                                    edgecolor='black', alpha=0.7)
+            if last_op_machine != -2:
+                ax.barh(last_op_machine, completion_time - due_date, left=due_date, color='red',
+                        edgecolor='black', alpha=0.3, zorder=10)
 
-                            # 在红色条块的中心添加文本标签
-                            text_x_position = due_date + (completion_time - due_date) / 2
-                            ax.text(text_x_position, last_op_machine, f"J{job_id} Tardy",
-                                    va='center', ha='center', color='white', fontsize=8, fontweight='bold')
+                arrow_target_x = due_date + (completion_time - due_date) / 2
+                arrow_target_y = last_op_machine
+                if last_op_machine not in tardy_label_y_offsets:
+                    tardy_label_y_offsets[last_op_machine] = 0.4
+                else:
+                    tardy_label_y_offsets[last_op_machine] += 0.38
+                label_y_pos = last_op_machine + tardy_label_y_offsets[last_op_machine]
+
+                ax.annotate(
+                    f"J{job_id} Tardy",
+                    xy=(arrow_target_x, arrow_target_y),
+                    xytext=(due_date, label_y_pos),
+                    fontsize=8,
+                    fontweight='bold',
+                    va='center',
+                    ha='right',
+                    bbox=dict(boxstyle="round,pad=0.2", fc="red", alpha=0.9),
+                    arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0.2", color="white")
+                )
 
         # --- 3. 绘制动态事件 ---
         if dynamic_events:
@@ -284,7 +296,6 @@ def plot_enhanced_dynamic_gantt(schedules_dict, problem, dynamic_events=None, in
                         if trigger['machine'] == machine_id and trigger['task_count'] == current_task_count:
                             breakdown_start = op['end']
                             duration = event['duration']
-                            breakdown_end = breakdown_start + duration
                             ax.barh(machine_id, duration, left=breakdown_start, color='#696969', hatch='xxx',
                                     edgecolor='black')
                             ax.text(breakdown_start + duration / 2, machine_id, "Down", va='center', ha='center',
@@ -298,24 +309,29 @@ def plot_enhanced_dynamic_gantt(schedules_dict, problem, dynamic_events=None, in
         ax.set_yticklabels(["Outsourcing"] + [f"M{i}" for i in range(problem.num_machines)])
         ax.grid(True, axis='x', linestyle=':', alpha=0.6)
 
-    # --- 5. 设置图例 ---
+    # --- 5. 设置图例和最终布局 ---
     legend_handles = []
     if initial_num_jobs is not None:
         for j in range(initial_num_jobs):
             legend_handles.append(Patch(color=colors(j % 20), label=f"Job {j} (Original)"))
-        for j in range(initial_num_jobs, final_num_jobs):
-            legend_handles.append(
-                Patch(facecolor=colors(j % 20), edgecolor='black', hatch='///', label=f"Job {j} (New)"))
+        if final_num_jobs > initial_num_jobs:
+            for j in range(initial_num_jobs, final_num_jobs):
+                legend_handles.append(
+                    Patch(facecolor=colors(j % 20), edgecolor='black', hatch='///', label=f"Job {j} (New)"))
     legend_handles.extend([
         mpatches.Patch(facecolor='#A9A9A9', hatch='++', edgecolor='black', label='Overtime Task'),
         mpatches.Patch(facecolor='grey', hatch='xx', edgecolor='black', label='Outsourced Job'),
-        mpatches.Patch(color='red', alpha=0.7, label='Tardiness'),
+        mpatches.Patch(color='red', alpha=0.3, label='Tardiness'),
         mpatches.Patch(facecolor='#696969', hatch='xxx', edgecolor='black', label='Breakdown'),
         plt.Line2D([0], [0], color='r', linestyle='--', label='Due Date')
     ])
+
+    # 图例右上角垂直排列
     fig.legend(handles=legend_handles, loc='upper right', bbox_to_anchor=(1.0, 0.98), ncol=1, fontsize='small')
     axs[-1].set_xlabel("Time")
     fig.suptitle("Enhanced Dynamic Gantt Chart Analysis", fontsize=16)
+
+    # 调整布局为图例留出空间
     plt.tight_layout(rect=[0, 0, 0.85, 0.96])
     plt.show()
 

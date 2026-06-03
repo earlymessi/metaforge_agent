@@ -1,0 +1,9 @@
+from metaforge.tools.delivery.assess import register_delivery_assess_tool
+from metaforge.tools.delivery.compare_commitment import register_delivery_compare_commitment_tool
+from metaforge.tools.delivery.customer_script import register_delivery_customer_script_tool
+from metaforge.tools.delivery.explain_impact import register_delivery_explain_impact_tool
+
+register_delivery_assess_tool()
+register_delivery_compare_commitment_tool()
+register_delivery_explain_impact_tool()
+register_delivery_customer_script_tool()

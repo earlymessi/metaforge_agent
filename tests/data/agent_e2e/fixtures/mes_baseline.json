@@ -1,0 +1,29 @@
+{
+  "custom_data": [
+    {
+      "name": "工单A",
+      "priority": 10,
+      "due_date": 30.0,
+      "tasks": [
+        {"machine_id": 0, "duration": 5},
+        {"machine_id": 1, "duration": 3}
+      ]
+    },
+    {
+      "name": "工单B",
+      "priority": 10,
+      "due_date": 40.0,
+      "tasks": [
+        {"machine_id": 1, "duration": 4},
+        {"machine_id": 0, "duration": 2}
+      ]
+    }
+  ],
+  "baseline_gantt": [
+    {"job_id": 0, "machine_id": 0, "operation_id": 0, "start": 0.0, "end": 5.0, "job_name": "工单A"},
+    {"job_id": 0, "machine_id": 1, "operation_id": 1, "start": 5.0, "end": 8.0, "job_name": "工单A"},
+    {"job_id": 1, "machine_id": 1, "operation_id": 0, "start": 8.0, "end": 12.0, "job_name": "工单B"},
+    {"job_id": 1, "machine_id": 0, "operation_id": 1, "start": 12.0, "end": 14.0, "job_name": "工单B"}
+  ],
+  "sim_time": 5.0
+}

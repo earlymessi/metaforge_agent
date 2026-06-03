@@ -1,0 +1,169 @@
+# Agent 评测用例：路由 / 计划 / 执行（可选）
+# router_mode:
+#   rule  — 仅规则回退（LLM 关闭时 CI 必过）
+#   llm   — 需 GLM 路由（设置 RUN_LLM_BENCHMARK=1 且配置 API Key）
+#   explicit — 用 intent 字段，不测自然语言路由
+#
+# tier: preview（默认）| run（完整 Tool 执行，较慢）
+
+version: 1
+
+cases:
+  # --- 规则路由（离线 CI）---
+  - id: rule_plans_create
+    message: "新建计划 benchmark_a"
+    router_mode: rule
+    expect_agent: plans
+    expect_intent: plans
+    tags: [route, plans]
+
+  - id: rule_plans_list
+    message: "列出所有计划"
+    router_mode: rule
+    expect_agent: plans
+    expect_intent: plans
+    tags: [route, plans]
+
+  - id: rule_pipeline_persist
+    message: "把这个计划排程并保存落库"
+    router_mode: rule
+    expect_agent: pipeline
+    expect_intent: pipeline
+    tags: [route, pipeline]
+
+  - id: rule_events_fault
+    message: "3号机坏了需要重排"
+    router_mode: rule
+    expect_agent: events
+    expect_intent: reschedule
+    tags: [route, events]
+
+  - id: rule_events_insert
+    message: "客户插单紧急重排"
+    router_mode: rule
+    expect_agent: events
+    expect_intent: reschedule
+    tags: [route, events]
+
+  - id: rule_default_schedule
+    message: "用禁忌搜索帮我排一下"
+    router_mode: rule
+    expect_agent: scheduling
+    expect_intent: schedule
+    tags: [route, scheduling, rule_limitation]
+    notes: "规则回退无法识别算法名，默认 scheduling；真 NL 路由需 llm 用例"
+
+  # --- GLM 路由（集成评测，默认 skip）---
+  - id: llm_kitting
+    message: "检查一下齐套能否开工"
+    router_mode: llm
+    expect_agent: kitting
+    expect_intent: kitting
+    tags: [route, kitting]
+
+  - id: llm_commitment
+    message: "交期能不能满足客户要求"
+    router_mode: llm
+    expect_agent: commitment
+    expect_intent: commitment
+    tags: [route, commitment]
+
+  - id: llm_whatif
+    message: "对比一下交付优先和吞吐优先两种方案"
+    router_mode: llm
+    expect_agent: whatif
+    expect_intent: whatif
+    tags: [route, whatif]
+
+  - id: llm_scheduling_ts
+    message: "用禁忌搜索排程"
+    router_mode: llm
+    expect_agent: scheduling
+    expect_intent: schedule
+    tags: [route, scheduling]
+
+  # --- 计划 Tool 链（intent 固定，不测路由）---
+  - id: plan_scheduling
+    message: "排程"
+    intent: schedule
+    router_mode: explicit
+    expect_agent: scheduling
+    expect_tools: ["scheduling.parse_intent", "scheduling.run"]
+    tags: [plan, scheduling]
+
+  - id: plan_events
+    message: ""
+    intent: reschedule
+    router_mode: explicit
+    expect_agent: events
+    params:
+      skip_parse: true
+      event_envelope:
+        event_type: priority_change
+        params:
+          changes: [{job_name: "J1", new_priority: 50}]
+        reschedule_options:
+          solvers: [spt]
+    expect_tools: ["events.reschedule", "delivery.explain_impact"]
+    tags: [plan, events]
+
+  - id: plan_kitting_check
+    message: ""
+    intent: kitting
+    router_mode: explicit
+    expect_agent: kitting
+    params:
+      mode: check_only
+    expect_tools: ["material.check_static", "kitting.build_report"]
+    tags: [plan, kitting]
+
+  - id: plan_commitment
+    message: ""
+    intent: commitment
+    router_mode: explicit
+    expect_agent: commitment
+    expect_tools: ["delivery.assess"]
+    tags: [plan, commitment]
+
+  - id: plan_pipeline
+    message: ""
+    intent: pipeline
+    router_mode: explicit
+    expect_agent: pipeline
+    expect_tools:
+      - data.load_plan
+      - scheduling.run
+      - delivery.assess
+      - data.propose_persist
+    tags: [plan, pipeline]
+
+  - id: plan_plans_create_step
+    message: "创建计划 x"
+    intent: plans
+    router_mode: explicit
+    expect_agent: plans
+    expect_tools: ["data.create_plan"]
+    tags: [plan, plans]
+
+  # --- 端到端执行（最小工单）---
+  - id: run_scheduling_spt
+    tier: run
+    message: ""
+    intent: schedule
+    router_mode: explicit
+    expect_agent: scheduling
+    expect_status: success
+    params:
+      skip_parse: true
+      solvers: [spt]
+    tags: [run, scheduling]
+
+  - id: run_commitment_after_schedule
+    tier: run
+    message: ""
+    intent: commitment
+    router_mode: explicit
+    expect_agent: commitment
+    expect_status: success
+    requires_session_from: run_scheduling_spt
+    tags: [run, commitment, session]

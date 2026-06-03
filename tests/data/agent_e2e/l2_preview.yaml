@@ -1,0 +1,457 @@
+# L2 GLM Preview 用例 — 路由 + Plan + Parse（不执行 Tool）
+# 运行: RUN_GLM_PREVIEW=1 python -m metaforge.eval.agent_e2e --tier preview
+
+version: 1
+
+cases:
+  # --- scheduling ---
+  - id: L2-SCH-01
+    tier: preview
+    message: "用禁忌搜索，交付优先排程"
+    expect_agent: scheduling
+    expect_tools: [scheduling.parse_intent, scheduling.run]
+    tags: [scheduling, l2]
+
+  - id: L2-SCH-02
+    tier: preview
+    message: "对比一下遗传算法和模拟退火"
+    expect_agent: scheduling
+    expect_tools: [scheduling.parse_intent, scheduling.run]
+    tags: [scheduling, l2]
+
+  - id: L2-SCH-03
+    tier: preview
+    message: "跑一下 ft06 算例，吞吐优先"
+    expect_agent: scheduling
+    expect_tools: [scheduling.parse_intent, scheduling.run]
+    tags: [scheduling, l2, slow]
+
+  - id: L2-SCH-04
+    tier: preview
+    message: "快速先出个结果"
+    expect_agent: scheduling
+    expect_tools: [scheduling.parse_intent, scheduling.run]
+    tags: [scheduling, l2]
+
+  - id: L2-SCH-05
+    tier: preview
+    message: "帮我排一下"
+    expect_agent: scheduling
+    expect_tools_one_of:
+      - [scheduling.ask_clarification]
+      - [scheduling.parse_intent, scheduling.run]
+    tags: [scheduling, l2]
+
+  - id: L2-SCH-06
+    tier: preview
+    message: "按交期优先，全量对比所有算法"
+    expect_agent: scheduling
+    expect_tools: [scheduling.parse_intent, scheduling.run]
+    tags: [scheduling, l2, slow]
+
+  - id: L2-SCH-07
+    tier: preview
+    message: "用 SPT 排程，不考虑物料"
+    expect_agent: scheduling
+    expect_tools: [scheduling.parse_intent, scheduling.run]
+    tags: [scheduling, l2]
+
+  - id: L2-SCH-08
+    tier: preview
+    message: "有哪些算法可以用？"
+    expect_agent: scheduling
+    expect_tools: [scheduling.list_catalog]
+    tags: [scheduling, l2]
+
+  - id: L2-SCH-09
+    tier: preview
+    message: "把这个计划排程并保存落库"
+    expect_agent: scheduling
+    expect_tools: [scheduling.run]
+    tags: [scheduling, l2, persist]
+
+  - id: L2-SCH-10
+    tier: preview
+    message: "给当前工单做交付优先排程"
+    expect_agent: scheduling
+    expect_tools: [scheduling.parse_intent, scheduling.run]
+    tags: [scheduling, l2]
+
+  - id: L2-SCH-11
+    tier: preview
+    message: "用禁忌搜索和 SPT 对比一下"
+    expect_agent: scheduling
+    expect_tools: [scheduling.parse_intent, scheduling.run]
+    max_ms: 120000
+    tags: [scheduling, l2]
+
+  - id: L2-SCH-12
+    tier: preview
+    message: "排程"
+    intent: schedule
+    expect_agent: scheduling
+    expect_tools: [scheduling.parse_intent, scheduling.run]
+    tags: [scheduling, l2]
+
+  # --- events ---
+  - id: L2-EVT-01
+    tier: preview
+    message: "3号机坏了4小时"
+    expect_agent: events
+    expect_tools: [events.parse_event, events.reschedule]
+    tags: [events, l2]
+
+  - id: L2-EVT-02
+    tier: preview
+    message: "紧急插单"
+    expect_agent: events
+    expect_tools: [events.parse_event]
+    tags: [events, l2]
+
+  - id: L2-EVT-03
+    tier: preview
+    message: "订单106交期改为20"
+    expect_agent: events
+    expect_tools: [events.parse_event, events.reschedule]
+    tags: [events, l2]
+
+  - id: L2-EVT-04
+    tier: preview
+    message: "1号机停机大修8小时"
+    expect_agent: events
+    expect_tools: [events.parse_event, events.reschedule]
+    tags: [events, l2]
+
+  - id: L2-EVT-05
+    tier: preview
+    message: "工单A加急"
+    expect_agent: events
+    expect_tools: [events.parse_event, events.reschedule]
+    tags: [events, l2]
+
+  - id: L2-EVT-06
+    tier: preview
+    message: "支持哪些异常"
+    expect_agent: events
+    expect_tools: [events.list_event_types]
+    tags: [events, l2]
+
+  - id: L2-EVT-07
+    tier: preview
+    message: "物料延迟24小时"
+    expect_agent: events
+    expect_tools: [events.parse_event, events.reschedule]
+    tags: [events, l2]
+
+  - id: L2-EVT-08
+    tier: preview
+    message: "撤单工单B"
+    expect_agent: events
+    expect_tools: [events.parse_event, events.reschedule]
+    tags: [events, l2]
+
+  - id: L2-EVT-09
+    tier: preview
+    message: "工单A数量改成500件"
+    expect_agent: events
+    expect_tools: [events.parse_event, events.reschedule]
+    tags: [events, l2]
+
+  - id: L2-EVT-10
+    tier: preview
+    message: "客户插单 J005 交期后天"
+    expect_agent: events
+    expect_tools: [events.parse_event]
+    tags: [events, l2]
+
+  - id: L2-EVT-11
+    tier: preview
+    message: "2号产线计划停机2小时"
+    expect_agent: events
+    expect_tools: [events.parse_event, events.reschedule]
+    tags: [events, l2]
+
+  - id: L2-EVT-12
+    tier: preview
+    message: "3号机坏了需要重排"
+    expect_agent: events
+    tags: [events, l2, guard]
+
+  - id: L2-EVT-13
+    tier: preview
+    message: "改交期并重排 订单106 到25"
+    expect_agent: events
+    tags: [events, l2, guard]
+
+  - id: L2-EVT-14
+    tier: preview
+    message: "物料延迟3天到货重排"
+    expect_agent: events
+    tags: [events, l2]
+
+  # --- plans ---
+  - id: L2-PLN-01
+    tier: preview
+    message: "新建计划试产01"
+    expect_agent: plans
+    expect_tools: [data.create_plan]
+    tags: [plans, l2]
+
+  - id: L2-PLN-02
+    tier: preview
+    message: "列出所有计划"
+    expect_agent: plans
+    expect_tools: [data.list_plans]
+    tags: [plans, l2]
+
+  - id: L2-PLN-03
+    tier: preview
+    message: "查看计划 E2E-试产01"
+    expect_agent: plans
+    expect_tools: [data.bind_plan]
+    tags: [plans, l2]
+
+  - id: L2-PLN-04
+    tier: preview
+    message: "加载计划 演示-A"
+    expect_agent: plans
+    expect_tools: [data.bind_plan]
+    tags: [plans, l2]
+
+  - id: L2-PLN-05
+    tier: preview
+    message: "把计划 A 改名为计划 B"
+    expect_agent: plans
+    expect_tools: [data.rename_plan]
+    tags: [plans, l2]
+
+  - id: L2-PLN-06
+    tier: preview
+    message: "复制计划试产01 为试产02"
+    expect_agent: plans
+    expect_tools: [data.duplicate_plan]
+    tags: [plans, l2]
+
+  - id: L2-PLN-07
+    tier: preview
+    message: "标记计划 A 为已完成"
+    expect_agent: plans
+    expect_tools: [data.update_status]
+    tags: [plans, l2]
+
+  - id: L2-PLN-08
+    tier: preview
+    message: "删除计划旧版"
+    expect_agent: plans
+    expect_tools: [data.delete_plan]
+    tags: [plans, l2]
+
+  - id: L2-PLN-09
+    tier: preview
+    message: "创建一个名为春季批次的计划"
+    expect_agent: plans
+    expect_tools: [data.create_plan]
+    tags: [plans, l2]
+
+  - id: L2-PLN-10
+    tier: preview
+    message: "打开计划 sss"
+    expect_agent: plans
+    expect_tools: [data.bind_plan]
+    tags: [plans, l2]
+
+  # --- kitting ---
+  - id: L2-KIT-01
+    tier: preview
+    message: "检查一下齐套能否开工"
+    expect_agent: kitting
+    expect_tools: [material.check_static, kitting.build_report]
+    tags: [kitting, l2]
+
+  - id: L2-KIT-02
+    tier: preview
+    message: "当前工单物料齐套吗"
+    expect_agent: kitting
+    expect_tools: [material.check_static, kitting.build_report]
+    tags: [kitting, l2]
+
+  - id: L2-KIT-03
+    tier: preview
+    message: "缺料会导致哪些工单延期"
+    expect_agent: kitting
+    expect_tools: [material.check_static]
+    tags: [kitting, l2, guard]
+
+  - id: L2-KIT-04
+    tier: preview
+    message: "先排程再预测物料消耗"
+    expect_agent: kitting
+    expect_tools: [scheduling.run, material.predict, kitting.build_report]
+    max_ms: 120000
+    tags: [kitting, l2]
+
+  - id: L2-KIT-05
+    tier: preview
+    message: "这批订单能否按时开工"
+    expect_agent: kitting
+    expect_tools: [material.check_static, kitting.build_report]
+    tags: [kitting, l2]
+
+  - id: L2-KIT-06
+    tier: preview
+    message: "检查一下 BOM 缺料情况"
+    expect_agent: kitting
+    expect_tools: [material.check_static, kitting.build_report]
+    tags: [kitting, l2]
+
+  # --- commitment ---
+  - id: L2-CMT-01
+    tier: preview
+    message: "交期能不能满足客户"
+    expect_agent: commitment
+    expect_tools: [delivery.assess]
+    tags: [commitment, l2]
+
+  - id: L2-CMT-02
+    tier: preview
+    message: "哪些工单可能延期"
+    expect_agent: commitment
+    expect_tools: [delivery.assess]
+    tags: [commitment, l2]
+
+  - id: L2-CMT-03
+    tier: preview
+    message: "评估一下当前排程的交付情况"
+    expect_agent: commitment
+    expect_tools: [delivery.assess]
+    tags: [commitment, l2]
+
+  - id: L2-CMT-04
+    tier: preview
+    message: "生成一段给客户的交期说明话术"
+    expect_agent: commitment
+    expect_tools: [delivery.assess]
+    tags: [commitment, l2]
+
+  - id: L2-CMT-05
+    tier: preview
+    message: "客户问能不能5月15日交货"
+    expect_agent: commitment
+    expect_tools: [delivery.assess]
+    tags: [commitment, l2]
+
+  - id: L2-CMT-06
+    tier: preview
+    message: "这批订单交期有没有风险"
+    expect_agent: commitment
+    expect_tools: [delivery.assess]
+    tags: [commitment, l2]
+
+  # --- whatif ---
+  - id: L2-WIF-01
+    tier: preview
+    message: "对比一下交付优先和吞吐优先两种策略"
+    expect_agent: whatif
+    expect_tools: [compare.variants]
+    tags: [whatif, l2]
+
+  - id: L2-WIF-02
+    tier: preview
+    message: "如果按交期优先和按产能优先排，哪个更好"
+    expect_agent: whatif
+    expect_tools: [compare.variants]
+    tags: [whatif, l2]
+
+  - id: L2-WIF-03
+    tier: preview
+    message: "假设用 SPT 和禁忌搜索各跑一遍，对比一下"
+    expect_agent: whatif
+    expect_tools: [compare.variants]
+    tags: [whatif, l2]
+
+  - id: L2-WIF-04
+    tier: preview
+    message: "比较不同排程方案的风险差异"
+    expect_agent: whatif
+    expect_tools: [compare.variants]
+    tags: [whatif, l2]
+
+  - id: L2-WIF-05
+    tier: preview
+    message: "对比交付优先和产能优先"
+    expect_agent: whatif
+    expect_tools: [compare.variants]
+    tags: [whatif, l2]
+
+  # --- 路由对抗 ---
+  - id: L2-ADV-01
+    tier: preview
+    message: "新建计划 benchmark_a"
+    expect_agent: plans
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-02
+    tier: preview
+    message: "用禁忌搜索排程"
+    expect_agent: scheduling
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-03
+    tier: preview
+    message: "3号机坏了4小时，帮我重排"
+    expect_agent: events
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-04
+    tier: preview
+    message: "订单106交期改为20"
+    expect_agent: events
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-05
+    tier: preview
+    message: "缺料会导致哪些工单延期"
+    expect_agent: kitting
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-06
+    tier: preview
+    message: "交期能不能满足客户"
+    expect_agent: commitment
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-07
+    tier: preview
+    message: "把这个计划排程并保存落库"
+    expect_agent: scheduling
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-08
+    tier: preview
+    message: "列出所有计划"
+    expect_agent: plans
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-09
+    tier: preview
+    message: "对比一下交付优先和吞吐优先"
+    expect_agent: whatif
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-10
+    tier: preview
+    message: "检查一下齐套能否开工"
+    expect_agent: kitting
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-11
+    tier: preview
+    message: "紧急插单工单 J005"
+    expect_agent: events
+    tags: [adversarial, l2]
+
+  - id: L2-ADV-12
+    tier: preview
+    message: "做一个生产计划并排程落库"
+    expect_agent: scheduling
+    tags: [adversarial, l2]

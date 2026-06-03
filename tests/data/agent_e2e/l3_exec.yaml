@@ -1,0 +1,620 @@
+# L3 端到端执行用例 — 与 L2 Preview 矩阵 1:1（65 条）
+# 运行: RUN_GLM_EXEC=1 python -m metaforge.eval.agent_e2e --tier exec
+# 慢用例: AGENT_E2E_SLOW=1  |  plans: AGENT_E2E_MONGO=1
+
+version: 1
+
+cases:
+  # --- scheduling (12) ---
+  - id: L3-SCH-01
+    tier: exec
+    message: "用禁忌搜索，交付优先排程"
+    expect_agent: scheduling
+    expect_status: success
+    expect_artifacts_keys: [schedule_results]
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3]
+
+  - id: L3-SCH-02
+    tier: exec
+    message: "对比一下遗传算法和模拟退火"
+    expect_agent: whatif
+    expect_status: success
+    expect_artifacts_keys: [what_if]
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3]
+
+  - id: L3-SCH-03
+    tier: exec
+    message: "跑一下 ft06 算例，吞吐优先"
+    expect_agent: scheduling
+    expect_status: success
+    expect_artifacts_keys: [schedule_results]
+    max_ms: 300000
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3, slow]
+
+  - id: L3-SCH-04
+    tier: exec
+    message: "快速先出个结果"
+    expect_agent: scheduling
+    expect_status: success
+    expect_artifacts_keys: [schedule_results]
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3]
+
+  - id: L3-SCH-05
+    tier: exec
+    message: "帮我排一下"
+    expect_agent: scheduling
+    expect_status: [success, need_input, pending_clarification]
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3]
+
+  - id: L3-SCH-06
+    tier: exec
+    message: "按交期优先，全量对比所有算法"
+    expect_agent: scheduling
+    expect_status: success
+    expect_artifacts_keys: [schedule_results]
+    max_ms: 300000
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3, slow]
+
+  - id: L3-SCH-07
+    tier: exec
+    message: "用 SPT 排程，不考虑物料"
+    expect_agent: scheduling
+    expect_status: success
+    expect_artifacts_keys: [schedule_results]
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3]
+
+  - id: L3-SCH-08
+    tier: exec
+    message: "有哪些算法可以用？"
+    expect_agent: scheduling
+    expect_status: success
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3]
+
+  - id: L3-SCH-09
+    tier: exec
+    message: "把这个计划排程并保存落库"
+    expect_agent: scheduling
+    expect_status: [success, pending_confirm, need_input]
+    context:
+      fixture: min_jobs
+      e2e_plan_name: E2E-Persist-Base
+    tags: [scheduling, l3, persist, mongo]
+
+  - id: L3-SCH-10
+    tier: exec
+    message: "给当前工单做交付优先排程"
+    expect_agent: scheduling
+    expect_status: success
+    expect_artifacts_keys: [schedule_results]
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3]
+
+  - id: L3-SCH-11
+    tier: exec
+    message: "用禁忌搜索和 SPT 对比一下"
+    expect_agent: whatif
+    expect_status: success
+    expect_artifacts_keys: [what_if]
+    max_ms: 120000
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3]
+
+  - id: L3-SCH-12
+    tier: exec
+    message: "排程"
+    intent: schedule
+    params:
+      skip_parse: true
+      solvers: [spt, ts]
+    expect_agent: scheduling
+    expect_status: success
+    expect_artifacts_keys: [schedule_results]
+    context:
+      fixture: min_jobs
+    tags: [scheduling, l3, deterministic]
+
+  # --- events (14) ---
+  - id: L3-EVT-01
+    tier: exec
+    message: "3号机坏了4小时"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-02
+    tier: exec
+    message: "紧急插单"
+    expect_agent: events
+    expect_status: [success, need_input]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-03
+    tier: exec
+    message: "订单106交期改为20"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-04
+    tier: exec
+    message: "1号机停机大修8小时"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-05
+    tier: exec
+    message: "工单A加急"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-06
+    tier: exec
+    message: "支持哪些异常"
+    expect_agent: events
+    expect_status: success
+    context:
+      fixture: min_jobs
+    tags: [events, l3]
+
+  - id: L3-EVT-07
+    tier: exec
+    message: "物料延迟24小时"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-08
+    tier: exec
+    message: "撤单工单B"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-09
+    tier: exec
+    message: "工单A数量改成500件"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-10
+    tier: exec
+    message: "客户插单 J005 交期后天"
+    expect_agent: events
+    expect_status: [success, need_input]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-11
+    tier: exec
+    message: "2号产线计划停机2小时"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  - id: L3-EVT-12
+    tier: exec
+    message: "3号机坏了需要重排"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3, guard]
+
+  - id: L3-EVT-13
+    tier: exec
+    message: "改交期并重排 订单106 到25"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3, guard]
+
+  - id: L3-EVT-14
+    tier: exec
+    message: "物料延迟3天到货重排"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [events, l3]
+
+  # --- plans (10, 需 Mongo) ---
+  - id: L3-PLN-01
+    tier: exec
+    message: "新建计划试产01"
+    expect_agent: plans
+    expect_status: success
+    tags: [plans, l3, mongo]
+
+  - id: L3-PLN-02
+    tier: exec
+    message: "列出所有计划"
+    expect_agent: plans
+    expect_status: success
+    tags: [plans, l3, mongo]
+
+  - id: L3-PLN-03
+    tier: exec
+    message: "查看计划 E2E-试产01"
+    expect_agent: plans
+    expect_status: [success, need_input]
+    tags: [plans, l3, mongo]
+
+  - id: L3-PLN-04
+    tier: exec
+    message: "加载计划 演示-A"
+    expect_agent: plans
+    expect_status: [success, need_input]
+    tags: [plans, l3, mongo]
+
+  - id: L3-PLN-05
+    tier: exec
+    message: "把计划 A 改名为计划 B"
+    expect_agent: plans
+    expect_status: [success, need_input]
+    tags: [plans, l3, mongo]
+
+  - id: L3-PLN-06
+    tier: exec
+    message: "复制计划试产01 为试产02"
+    expect_agent: plans
+    expect_status: [success, need_input]
+    tags: [plans, l3, mongo]
+
+  - id: L3-PLN-07
+    tier: exec
+    message: "标记计划 A 为已完成"
+    expect_agent: plans
+    expect_status: [success, need_input]
+    tags: [plans, l3, mongo]
+
+  - id: L3-PLN-08
+    tier: exec
+    message: "删除计划旧版"
+    expect_agent: plans
+    expect_status: [success, need_input]
+    tags: [plans, l3, mongo]
+
+  - id: L3-PLN-09
+    tier: exec
+    message: "创建一个名为春季批次的计划"
+    expect_agent: plans
+    expect_status: success
+    tags: [plans, l3, mongo]
+
+  - id: L3-PLN-10
+    tier: exec
+    message: "打开计划 sss"
+    expect_agent: plans
+    expect_status: [success, need_input]
+    tags: [plans, l3, mongo]
+
+  # --- kitting (6) ---
+  - id: L3-KIT-01
+    tier: exec
+    message: "检查一下齐套能否开工"
+    expect_agent: kitting
+    expect_status: success
+    expect_artifacts_keys: [kitting_report]
+    context:
+      fixture: min_jobs
+    tags: [kitting, l3]
+
+  - id: L3-KIT-02
+    tier: exec
+    message: "当前工单物料齐套吗"
+    expect_agent: kitting
+    expect_status: success
+    expect_artifacts_keys: [kitting_report]
+    context:
+      fixture: min_jobs
+    tags: [kitting, l3]
+
+  - id: L3-KIT-03
+    tier: exec
+    message: "缺料会导致哪些工单延期"
+    expect_agent: kitting
+    expect_status: success
+    expect_artifacts_keys: [kitting_report]
+    context:
+      fixture: bom_jobs
+    tags: [kitting, l3, guard]
+
+  - id: L3-KIT-04
+    tier: exec
+    message: "先排程再预测物料消耗"
+    expect_agent: kitting
+    expect_status: success
+    expect_artifacts_keys: [kitting_report]
+    max_ms: 120000
+    context:
+      fixture: min_jobs
+    tags: [kitting, l3]
+
+  - id: L3-KIT-05
+    tier: exec
+    message: "这批订单能否按时开工"
+    expect_agent: kitting
+    expect_status: success
+    expect_artifacts_keys: [kitting_report]
+    context:
+      fixture: min_jobs
+    tags: [kitting, l3]
+
+  - id: L3-KIT-06
+    tier: exec
+    message: "检查一下 BOM 缺料情况"
+    expect_agent: kitting
+    expect_status: success
+    expect_artifacts_keys: [kitting_report]
+    context:
+      fixture: bom_jobs
+    tags: [kitting, l3]
+
+  # --- commitment (6, 依赖排程会话) ---
+  - id: L3-CMT-01
+    tier: exec
+    message: "交期能不能满足客户"
+    expect_agent: commitment
+    expect_status: success
+    expect_artifacts_keys: [delivery_assessment]
+    requires_session_from: L3-SCH-12
+    tags: [commitment, l3, multi_turn]
+
+  - id: L3-CMT-02
+    tier: exec
+    message: "哪些工单可能延期"
+    expect_agent: commitment
+    expect_status: success
+    expect_artifacts_keys: [delivery_assessment]
+    requires_session_from: L3-SCH-12
+    tags: [commitment, l3, multi_turn]
+
+  - id: L3-CMT-03
+    tier: exec
+    message: "评估一下当前排程的交付情况"
+    expect_agent: commitment
+    expect_status: success
+    expect_artifacts_keys: [delivery_assessment]
+    requires_session_from: L3-SCH-12
+    tags: [commitment, l3, multi_turn]
+
+  - id: L3-CMT-04
+    tier: exec
+    message: "生成一段给客户的交期说明话术"
+    expect_agent: commitment
+    expect_status: success
+    expect_artifacts_keys: [delivery_assessment]
+    requires_session_from: L3-SCH-12
+    tags: [commitment, l3, multi_turn]
+
+  - id: L3-CMT-05
+    tier: exec
+    message: "客户问能不能5月15日交货"
+    expect_agent: commitment
+    expect_status: success
+    expect_artifacts_keys: [delivery_assessment]
+    requires_session_from: L3-SCH-12
+    tags: [commitment, l3, multi_turn]
+
+  - id: L3-CMT-06
+    tier: exec
+    message: "这批订单交期有没有风险"
+    expect_agent: commitment
+    expect_status: success
+    expect_artifacts_keys: [delivery_assessment]
+    requires_session_from: L3-SCH-12
+    tags: [commitment, l3, multi_turn]
+
+  # --- whatif (5) ---
+  - id: L3-WIF-01
+    tier: exec
+    message: "对比一下交付优先和吞吐优先两种策略"
+    expect_agent: whatif
+    expect_status: success
+    expect_artifacts_keys: [what_if]
+    context:
+      fixture: min_jobs
+    tags: [whatif, l3]
+
+  - id: L3-WIF-02
+    tier: exec
+    message: "如果按交期优先和按产能优先排，哪个更好"
+    expect_agent: whatif
+    expect_status: success
+    expect_artifacts_keys: [what_if]
+    context:
+      fixture: min_jobs
+    tags: [whatif, l3]
+
+  - id: L3-WIF-03
+    tier: exec
+    message: "假设用 SPT 和禁忌搜索各跑一遍，对比一下"
+    expect_agent: whatif
+    expect_status: success
+    expect_artifacts_keys: [what_if]
+    context:
+      fixture: min_jobs
+    tags: [whatif, l3]
+
+  - id: L3-WIF-04
+    tier: exec
+    message: "比较不同排程方案的风险差异"
+    expect_agent: whatif
+    expect_status: success
+    expect_artifacts_keys: [what_if]
+    context:
+      fixture: min_jobs
+    tags: [whatif, l3]
+
+  - id: L3-WIF-05
+    tier: exec
+    message: "对比交付优先和产能优先"
+    expect_agent: whatif
+    expect_status: success
+    expect_artifacts_keys: [what_if]
+    context:
+      fixture: min_jobs
+    tags: [whatif, l3]
+
+  # --- 路由对抗 (12) ---
+  - id: L3-ADV-01
+    tier: exec
+    message: "新建计划 benchmark_a"
+    expect_agent: plans
+    expect_status: [success, need_input]
+    tags: [adversarial, l3, mongo]
+
+  - id: L3-ADV-02
+    tier: exec
+    message: "用禁忌搜索排程"
+    expect_agent: scheduling
+    expect_status: success
+    expect_artifacts_keys: [schedule_results]
+    context:
+      fixture: min_jobs
+    tags: [adversarial, l3]
+
+  - id: L3-ADV-03
+    tier: exec
+    message: "3号机坏了4小时，帮我重排"
+    expect_agent: events
+    expect_status: [success, need_input]
+    expect_artifacts_keys: [impact_report]
+    context:
+      fixture: mes_baseline
+    tags: [adversarial, l3]
+
+  - id: L3-ADV-04
+    tier: exec
+    message: "订单106交期改为20"
+    expect_agent: events
+    expect_status: [success, need_input]
+    context:
+      fixture: mes_baseline
+    tags: [adversarial, l3]
+
+  - id: L3-ADV-05
+    tier: exec
+    message: "缺料会导致哪些工单延期"
+    expect_agent: kitting
+    expect_status: success
+    context:
+      fixture: bom_jobs
+    tags: [adversarial, l3]
+
+  - id: L3-ADV-06
+    tier: exec
+    message: "交期能不能满足客户"
+    expect_agent: commitment
+    expect_status: success
+    expect_artifacts_keys: [delivery_assessment]
+    requires_session_from: L3-SCH-12
+    tags: [adversarial, l3, multi_turn]
+
+  - id: L3-ADV-07
+    tier: exec
+    message: "把这个计划排程并保存落库"
+    expect_agent: scheduling
+    expect_status: [success, pending_confirm, need_input]
+    context:
+      fixture: min_jobs
+      e2e_plan_name: E2E-Persist-Base
+    tags: [adversarial, l3, persist, mongo]
+
+  - id: L3-ADV-08
+    tier: exec
+    message: "列出所有计划"
+    expect_agent: plans
+    expect_status: success
+    tags: [adversarial, l3, mongo]
+
+  - id: L3-ADV-09
+    tier: exec
+    message: "对比一下交付优先和吞吐优先"
+    expect_agent: whatif
+    expect_status: success
+    expect_artifacts_keys: [what_if]
+    context:
+      fixture: min_jobs
+    tags: [adversarial, l3]
+
+  - id: L3-ADV-10
+    tier: exec
+    message: "检查一下齐套能否开工"
+    expect_agent: kitting
+    expect_status: success
+    expect_artifacts_keys: [kitting_report]
+    context:
+      fixture: min_jobs
+    tags: [adversarial, l3]
+
+  - id: L3-ADV-11
+    tier: exec
+    message: "紧急插单工单 J005"
+    expect_agent: events
+    expect_status: [success, need_input]
+    context:
+      fixture: mes_baseline
+    tags: [adversarial, l3]
+
+  - id: L3-ADV-12
+    tier: exec
+    message: "做一个生产计划并排程落库"
+    expect_agent: scheduling
+    expect_status: [success, pending_confirm, need_input]
+    context:
+      fixture: min_jobs
+      e2e_plan_name: E2E-Persist-Base
+    tags: [adversarial, l3, persist, mongo]

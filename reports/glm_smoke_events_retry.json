@@ -1,0 +1,86 @@
+{
+  "generated_at": "2026-05-31T07:51:31.607767+00:00",
+  "exec_mode": false,
+  "react": false,
+  "reflect": false,
+  "results": [
+    {
+      "case_id": "evt_breakdown",
+      "message": "3号机坏了4小时",
+      "domain": "events",
+      "ok": true,
+      "agent_id": "events",
+      "router": "llm",
+      "router_intent": "reschedule",
+      "plan_planner": "llm",
+      "tools": [
+        "execution.get_state",
+        "events.parse_event",
+        "events.check_insert_job",
+        "events.reschedule",
+        "delivery.compare_commitment",
+        "delivery.explain_impact"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 设备故障",
+        "· 需要重调度",
+        "· 非计划库",
+        "· 选 reschedule",
+        "结论：设备故障引发重排",
+        "识别 intent：异常重排（reschedule）",
+        "选中 Agent：异常重排 Agent（events）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 6 步"
+      ],
+      "error": "",
+      "elapsed_ms": 25524.2,
+      "expect_agent": "events",
+      "note": "设备故障"
+    },
+    {
+      "case_id": "evt_insert",
+      "message": "紧急插单",
+      "domain": "events",
+      "ok": true,
+      "agent_id": "events",
+      "router": "llm",
+      "router_intent": "reschedule",
+      "plan_planner": "rule_fallback",
+      "tools": [
+        "execution.get_state",
+        "events.parse_event",
+        "events.check_insert_job",
+        "events.reschedule",
+        "delivery.compare_commitment",
+        "delivery.explain_impact"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要紧急插入新订单",
+        "· 属于动态插单事件",
+        "· 需要重排现有计划",
+        "· 选 reschedule",
+        "结论：紧急插单触发动态重排，非单纯交期问询",
+        "识别 intent：异常重排（reschedule）",
+        "选中 Agent：异常重排 Agent（events）"
+      ],
+      "plan_lines": [
+        "GLM 计划失败，回退规则模板",
+        "共 6 步"
+      ],
+      "error": "",
+      "elapsed_ms": 53297.0,
+      "expect_agent": "events",
+      "note": "插单"
+    }
+  ]
+}

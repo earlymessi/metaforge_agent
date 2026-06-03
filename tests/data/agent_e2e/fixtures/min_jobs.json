@@ -1,0 +1,23 @@
+[
+  {
+    "name": "工单A",
+    "priority": 10,
+    "due_date": 20.0,
+    "tasks": [
+      {"name": "Op-1", "machine_id": 0, "duration": 3},
+      {"name": "Op-2", "machine_id": 1, "duration": 2}
+    ]
+  },
+  {
+    "name": "订单106",
+    "priority": 15,
+    "due_date": 18.0,
+    "tasks": [{"name": "Op-1", "machine_id": 0, "duration": 4}]
+  },
+  {
+    "name": "工单B",
+    "priority": 20,
+    "due_date": 25.0,
+    "tasks": [{"name": "Op-1", "machine_id": 1, "duration": 3}]
+  }
+]

@@ -1,0 +1,3 @@
+from metaforge.tools.execution.get_state import register_execution_get_state_tool
+
+register_execution_get_state_tool()

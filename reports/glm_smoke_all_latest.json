@@ -1,0 +1,599 @@
+{
+  "generated_at": "2026-05-31T07:49:12.318451+00:00",
+  "exec_mode": false,
+  "react": false,
+  "reflect": false,
+  "results": [
+    {
+      "case_id": "sch_tabu_delivery",
+      "message": "用禁忌搜索，交付优先排程",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "rule_fallback",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要用禁忌搜索算法进行交付优先排程",
+        "· 不涉及计划库档案操作",
+        "· 涉及算法选择和排程计算",
+        "· 最终选schedule",
+        "结论：使用禁忌搜索算法进行交付优先排程，属于排程计算",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "GLM 计划失败，回退规则模板",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 66678.2,
+      "expect_agent": "scheduling",
+      "note": "算法+策略"
+    },
+    {
+      "case_id": "sch_compare_ga_sa",
+      "message": "对比一下遗传算法和模拟退火",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要对比两种排程算法",
+        "· 是对已有工单做排程计算",
+        "· 不是多策略方案 whatif",
+        "· 选 schedule",
+        "结论：对比求解器排程，非方案对比 Agent",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 62582.7,
+      "expect_agent": "scheduling",
+      "note": "多算法对比"
+    },
+    {
+      "case_id": "sch_benchmark",
+      "message": "跑一下 ft06 算例，吞吐优先",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要运行 ft06 算例并使用吞吐优先策略",
+        "· 不涉及计划库档案操作",
+        "· 涉及排程算法和甘特计算",
+        "· 选 schedule",
+        "结论：运行指定算例并采用吞吐优先策略排程",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 25929.3,
+      "expect_agent": "scheduling",
+      "note": "标准算例"
+    },
+    {
+      "case_id": "sch_fast",
+      "message": "快速先出个结果",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.ask_clarification"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户想要快速得到结果",
+        "· 未涉及计划库档案",
+        "· 可能是排程计算",
+        "· 选 schedule",
+        "结论：快速获取排程结果，未指定具体操作类型",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 1 步"
+      ],
+      "error": "",
+      "elapsed_ms": 65442.0,
+      "expect_agent": "scheduling",
+      "note": "快速模式"
+    },
+    {
+      "case_id": "sch_vague",
+      "message": "帮我排一下",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.ask_clarification"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要求进行排程操作",
+        "· 未提及计划库档案的增删改查",
+        "· 核心是排程计算",
+        "· 选 schedule",
+        "结论：用户要求进行排程计算，未涉及计划库操作",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 1 步"
+      ],
+      "error": "",
+      "elapsed_ms": 14256.5,
+      "expect_agent": "scheduling",
+      "note": "模糊意图，可能澄清"
+    },
+    {
+      "case_id": "sch_full_compare",
+      "message": "按交期优先，全量对比所有算法",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要按交期优先对比算法",
+        "· 不涉及计划库档案操作",
+        "· 需要选择算法并计算排程",
+        "· 属于排程计算对比",
+        "结论：按交期优先对比排程算法，非计划库操作",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 81744.6,
+      "expect_agent": "scheduling",
+      "note": "目标驱动全量对比"
+    },
+    {
+      "case_id": "sch_no_material",
+      "message": "用 SPT 排程，不考虑物料",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要用SPT算法排程",
+        "· 不涉及计划库档案",
+        "· 涉及算法选择和排程计算",
+        "· 选schedule",
+        "结论：使用SPT算法进行排程计算，非计划库操作",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 48666.5,
+      "expect_agent": "scheduling",
+      "note": "关闭物料"
+    },
+    {
+      "case_id": "sch_explicit",
+      "message": "排程",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "explicit",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.ask_clarification"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "用户指定意图：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 1 步"
+      ],
+      "error": "",
+      "elapsed_ms": 46642.9,
+      "expect_agent": "scheduling",
+      "note": "显式 intent"
+    },
+    {
+      "case_id": "evt_breakdown",
+      "message": "3号机坏了4小时",
+      "domain": "events",
+      "ok": true,
+      "agent_id": "events",
+      "router": "llm",
+      "router_intent": "reschedule",
+      "plan_planner": "llm",
+      "tools": [
+        "execution.get_state",
+        "events.parse_event",
+        "events.check_insert_job",
+        "events.reschedule",
+        "delivery.compare_commitment",
+        "delivery.explain_impact"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户报告设备故障事件",
+        "· 需要处理故障影响",
+        "· 不涉及计划库档案操作",
+        "· 属于动态事件需重排",
+        "结论：设备故障引发重排需求",
+        "识别 intent：异常重排（reschedule）",
+        "选中 Agent：异常重排 Agent（events）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 6 步"
+      ],
+      "error": "",
+      "elapsed_ms": 39769.6,
+      "expect_agent": "events",
+      "note": "设备故障"
+    },
+    {
+      "case_id": "evt_insert",
+      "message": "紧急插单",
+      "domain": "events",
+      "ok": true,
+      "agent_id": "events",
+      "router": "llm",
+      "router_intent": "reschedule",
+      "plan_planner": "rule_fallback",
+      "tools": [
+        "execution.get_state",
+        "events.parse_event",
+        "events.check_insert_job",
+        "events.reschedule",
+        "delivery.compare_commitment",
+        "delivery.explain_impact"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要紧急插入新订单",
+        "· 属于动态插单事件",
+        "· 需要重排现有计划",
+        "· 选 reschedule",
+        "结论：紧急插单触发动态重排，非单纯交期问询",
+        "识别 intent：异常重排（reschedule）",
+        "选中 Agent：异常重排 Agent（events）"
+      ],
+      "plan_lines": [
+        "GLM 计划失败，回退规则模板",
+        "共 6 步"
+      ],
+      "error": "",
+      "elapsed_ms": 43771.8,
+      "expect_agent": "events",
+      "note": "插单"
+    },
+    {
+      "case_id": "evt_due_date",
+      "message": "订单106交期改为20",
+      "domain": "events",
+      "ok": true,
+      "agent_id": "events",
+      "router": "llm",
+      "router_intent": "reschedule",
+      "plan_planner": "rule_fallback",
+      "tools": [
+        "execution.get_state",
+        "events.parse_event",
+        "events.check_insert_job",
+        "events.reschedule",
+        "delivery.compare_commitment",
+        "delivery.explain_impact"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要修改指定订单交期",
+        "· 属于动态事件",
+        "· 需重排并评估影响",
+        "· 选 reschedule",
+        "结论：改交期触发动态重排，非单纯交期问询",
+        "识别 intent：异常重排（reschedule）",
+        "选中 Agent：异常重排 Agent（events）"
+      ],
+      "plan_lines": [
+        "GLM 计划失败，回退规则模板",
+        "共 6 步"
+      ],
+      "error": "",
+      "elapsed_ms": 43537.4,
+      "expect_agent": "events",
+      "note": "改交期"
+    },
+    {
+      "case_id": "evt_downtime",
+      "message": "1号机停机大修8小时",
+      "domain": "events",
+      "ok": true,
+      "agent_id": "events",
+      "router": "llm",
+      "router_intent": "reschedule",
+      "plan_planner": "llm",
+      "tools": [
+        "execution.get_state",
+        "events.parse_event",
+        "events.check_insert_job",
+        "events.reschedule",
+        "delivery.compare_commitment",
+        "delivery.explain_impact"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 设备故障停机",
+        "· 需要重调度",
+        "· 非计划库操作",
+        "· 选 reschedule",
+        "结论：设备故障引发重排，非单纯交期问询",
+        "识别 intent：异常重排（reschedule）",
+        "选中 Agent：异常重排 Agent（events）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 6 步"
+      ],
+      "error": "",
+      "elapsed_ms": 43231.7,
+      "expect_agent": "events",
+      "note": "计划停机"
+    },
+    {
+      "case_id": "evt_priority",
+      "message": "工单A加急",
+      "domain": "events",
+      "ok": false,
+      "agent_id": "scheduling",
+      "router": "rule_fallback",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "GLM 路由失败，回退规则关键词匹配",
+        "原因：HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=30.0)",
+        "规则回退：未启用 GLM 时默认智能排程",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 84645.4,
+      "expect_agent": "events",
+      "note": "优先级"
+    },
+    {
+      "case_id": "evt_catalog",
+      "message": "支持哪些异常",
+      "domain": "events",
+      "ok": false,
+      "agent_id": "scheduling",
+      "router": "rule_fallback",
+      "router_intent": "schedule",
+      "plan_planner": "rule",
+      "tools": [
+        "scheduling.ask_clarification"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "GLM 路由失败，回退规则关键词匹配",
+        "原因：HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=30.0)",
+        "规则回退：未启用 GLM 时默认智能排程",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "使用 Agent 内置规则模板",
+        "共 1 步"
+      ],
+      "error": "",
+      "elapsed_ms": 54895.1,
+      "expect_agent": "events",
+      "note": "事件类型列表"
+    },
+    {
+      "case_id": "evt_material_delay",
+      "message": "物料延迟24小时",
+      "domain": "events",
+      "ok": true,
+      "agent_id": "events",
+      "router": "rule_override",
+      "router_intent": "reschedule",
+      "plan_planner": "llm",
+      "tools": [
+        "events.parse_event",
+        "events.check_insert_job",
+        "events.reschedule",
+        "delivery.explain_impact"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "GLM 路由已纠正（计划库话术不得进入排程 Agent）",
+        "插单工艺补充应继续由异常重排 Agent 处理，已纠正路由",
+        "原 GLM intent：kitting",
+        "纠正为：异常重排（reschedule）",
+        "选中 Agent：异常重排 Agent（events）",
+        "路由版本：2026-05-31-llm-first-guards"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 4 步"
+      ],
+      "error": "",
+      "elapsed_ms": 35086.5,
+      "expect_agent": "events",
+      "note": "到料延迟"
+    },
+    {
+      "case_id": "evt_cancel",
+      "message": "撤单工单B",
+      "domain": "events",
+      "ok": true,
+      "agent_id": "events",
+      "router": "rule_override",
+      "router_intent": "reschedule",
+      "plan_planner": "rule_fallback",
+      "tools": [
+        "execution.get_state",
+        "events.parse_event",
+        "events.check_insert_job",
+        "events.reschedule",
+        "delivery.compare_commitment",
+        "delivery.explain_impact"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "GLM 路由已纠正（计划库话术不得进入排程 Agent）",
+        "用户要修改交期或触发动态事件并重排，已纠正为异常重排 Agent",
+        "原 GLM intent：plans",
+        "纠正为：异常重排（reschedule）",
+        "选中 Agent：异常重排 Agent（events）",
+        "路由版本：2026-05-31-llm-first-guards"
+      ],
+      "plan_lines": [
+        "GLM 计划失败，回退规则模板",
+        "共 6 步"
+      ],
+      "error": "",
+      "elapsed_ms": 43392.7,
+      "expect_agent": "events",
+      "note": "撤单"
+    },
+    {
+      "case_id": "route_plans",
+      "message": "新建计划试产01",
+      "domain": "plans",
+      "ok": true,
+      "agent_id": "plans",
+      "router": "llm",
+      "router_intent": "plans",
+      "plan_planner": "rule",
+      "tools": [
+        "data.create_plan"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "结论：计划库操作（create）",
+        "识别 intent：计划管理（增删改查）（plans）",
+        "选中 Agent：计划管理 Agent（plans）",
+        "路由版本：2026-05-31-llm-first-guards"
+      ],
+      "plan_lines": [
+        "使用 Agent 内置规则模板",
+        "共 1 步"
+      ],
+      "error": "",
+      "elapsed_ms": 12523.4,
+      "expect_agent": "plans",
+      "note": "应进 plans 而非 scheduling"
+    }
+  ]
+}

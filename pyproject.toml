@@ -19,6 +19,11 @@ dependencies = [
     "seaborn",
     "pandas",
     "requests",
+    "fastapi",
+    "uvicorn",
+    "motor",
+    "pymongo",
+    "python-dotenv",
 ]
 
 classifiers = [

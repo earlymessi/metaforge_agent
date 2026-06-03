@@ -1,0 +1,16 @@
+[
+  {
+    "name": "工单A",
+    "priority": 10,
+    "due_date": 20.0,
+    "tasks": [{"machine_id": 0, "duration": 3}],
+    "materials": [{"material_id": "MAT_A", "quantity": 10}]
+  },
+  {
+    "name": "工单B",
+    "priority": 15,
+    "due_date": 25.0,
+    "tasks": [{"machine_id": 1, "duration": 2}],
+    "materials": [{"material_id": "MAT_B", "quantity": 50}]
+  }
+]

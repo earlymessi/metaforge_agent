@@ -1,0 +1,21 @@
+from metaforge.tools.data.bind_plan import register_data_bind_plan_tool
+from metaforge.tools.data.confirm_persist import register_data_confirm_persist_tool
+from metaforge.tools.data.create_plan import register_data_create_plan_tool
+from metaforge.tools.data.delete_plan import register_data_delete_plan_tool
+from metaforge.tools.data.duplicate_plan import register_data_duplicate_plan_tool
+from metaforge.tools.data.list_plans import register_data_list_plans_tool
+from metaforge.tools.data.load_plan import register_data_load_plan_tool
+from metaforge.tools.data.propose_persist import register_data_propose_persist_tool
+from metaforge.tools.data.rename_plan import register_data_rename_plan_tool
+from metaforge.tools.data.update_status import register_data_update_status_tool
+
+register_data_load_plan_tool()
+register_data_list_plans_tool()
+register_data_create_plan_tool()
+register_data_delete_plan_tool()
+register_data_bind_plan_tool()
+register_data_rename_plan_tool()
+register_data_duplicate_plan_tool()
+register_data_update_status_tool()
+register_data_propose_persist_tool()
+register_data_confirm_persist_tool()

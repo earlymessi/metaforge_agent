@@ -1,61 +1,61 @@
 import random
+import time
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from collections import deque, namedtuple
+from collections import deque
 from metaforge.core.base_solver import BaseSolver
 
 
-class QNetwork_Basic(nn.Module):
-    def __init__(self, input_size, output_size):
-        super(QNetwork_Basic, self).__init__()
+# ==========================================
+# 0. 辅助：极简局部搜索 (只做最后微调)
+# ==========================================
+def apply_local_search(problem, initial_sequence, max_steps=100):
+    if not initial_sequence or len(initial_sequence) < 2:
+        return initial_sequence, problem.evaluate(initial_sequence)
+
+    current_seq = initial_sequence[:]
+    current_score = problem.evaluate(current_seq)
+
+    for _ in range(max_steps):
+        i, j = random.sample(range(len(current_seq)), 2)
+        neighbor = current_seq[:]
+        neighbor[i], neighbor[j] = neighbor[j], neighbor[i]
+
+        # 只做简单的完工时间评估
+        neighbor_score = problem.evaluate(neighbor)
+
+        if neighbor_score < current_score:
+            current_seq = neighbor
+            current_score = neighbor_score
+
+    return current_seq, current_score
+
+
+# ==========================================
+# 1. 基础网络 (Simple MLP)
+# ==========================================
+class SimpleQNet(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(SimpleQNet, self).__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_size, 64),
-            nn.ReLU(),
-            nn.Linear(64, output_size)
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
-
-class QNetwork(nn.Module):
-    def __init__(self, input_size, output_size):
-        super(QNetwork, self).__init__()
-        self.net = nn.Sequential(
-            nn.Linear(input_size, 128),
+            nn.Linear(input_dim, 128),
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, output_size)
+            nn.Linear(64, output_dim)
         )
 
     def forward(self, x):
         return self.net(x)
 
 
-class ReplayBuffer:
-    def __init__(self, capacity):
-        self.buffer = deque(maxlen=capacity)
-        self.transition = namedtuple("Transition", ["state", "action", "reward", "next_state", "done"])
-
-    def add(self, *args):
-        self.buffer.append(self.transition(*args))
-
-    def sample(self, batch_size):
-        batch = random.sample(self.buffer, batch_size)
-        return zip(*batch)
-
-    def __len__(self):
-        return len(self.buffer)
-
-    def clear(self):  # <--- 添加这个方法
-        self.buffer.clear()
-
-
-class DQNAgentSolver(BaseSolver):
-    def __init__(self, problem, episodes=400, epsilon=0.1, gamma=0.95, lr=1e-3):
+# ==========================================
+# 2. DQN 基类 (包含通用的状态、动作逻辑)
+# ==========================================
+class BaseDQNSolver(BaseSolver):
+    def __init__(self, problem, episodes, epsilon, gamma, lr):
         super().__init__(problem)
         self.episodes = episodes
         self.epsilon = epsilon
@@ -63,242 +63,249 @@ class DQNAgentSolver(BaseSolver):
         self.lr = lr
 
         self.num_jobs = len(problem.jobs)
+        self.num_machines = problem.num_machines
         self.job_counts = [len(job) for job in problem.jobs]
-        self.total_ops = sum(self.job_counts)
 
-        self.input_size = self.num_jobs * 2  # job_ptrs + job_ready_times
+        # 状态: [进度, ReadyTime, MachineReady, Priority]
+        self.input_size = self.num_jobs * 3 + self.num_machines
         self.output_size = self.num_jobs
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.qnet = QNetwork_Basic(self.input_size, self.output_size).to(self.device)
+
+        # 两个算法共用相同的网络结构
+        self.qnet = SimpleQNet(self.input_size, self.output_size).to(self.device)
         self.optimizer = optim.Adam(self.qnet.parameters(), lr=self.lr)
         self.loss_fn = nn.MSELoss()
 
-    def _get_initial_state(self):
-        return [0] * self.num_jobs, [0] * self.num_jobs  # job_ptrs, job_ready_times
+        # 优先级数据预处理
+        raw_p = np.array([j.priority for j in problem.jobs])
+        self.norm_p = torch.tensor(raw_p / (np.max(raw_p) + 1e-6), dtype=torch.float32, device=self.device)
+        self.raw_p = raw_p
 
-    def _is_terminal(self, job_ptrs):
-        return all(job_ptrs[j] >= self.job_counts[j] for j in range(self.num_jobs))
+    def _get_state(self, ptrs, j_ready, m_ready):
+        max_ops = max(self.job_counts) if max(self.job_counts) > 0 else 1
+        p_t = torch.tensor(ptrs, dtype=torch.float32, device=self.device) / max_ops
+        jr_t = torch.tensor(j_ready, dtype=torch.float32, device=self.device) / 1000.0
+        mr_t = torch.tensor(m_ready, dtype=torch.float32, device=self.device) / 1000.0
+        return torch.cat([p_t, jr_t, mr_t, self.norm_p])
 
-    def _get_available_jobs(self, job_ptrs):
-        return [j for j in range(self.num_jobs) if job_ptrs[j] < self.job_counts[j]]
+    def _choose_action(self, state, avail):
+        # 优先级引导的 Epsilon-Greedy
+        if random.random() < self.epsilon:
+            # 即使随机，也倾向于选急单 (Priority Weighted Random)
+            weights = [self.raw_p[j] for j in avail]
+            if sum(weights) == 0: weights = [1] * len(weights)
+            action = random.choices(avail, weights=weights, k=1)[0]
+        else:
+            with torch.no_grad():
+                q_values = self.qnet(state.unsqueeze(0)).cpu().numpy()[0]
 
-    def _build_state_vector(self, job_ptrs, job_ready):
-        return torch.tensor(job_ptrs + job_ready, dtype=torch.float32, device=self.device)
+            # Masking
+            best_a = -1
+            max_q = -float('inf')
+            for a in avail:
+                if q_values[a] > max_q:
+                    max_q = q_values[a]
+                    best_a = a
+            action = best_a
+        return action
 
-    def run(self, track_history=True, track_schedule=False):
+
+# ==========================================
+# 3. Naive DQN (纯真的单步更新)
+#    区别：没有 Buffer，来一个数据练一次，不稳定
+# ==========================================
+class DQNAgentSolver(BaseDQNSolver):
+    def __init__(self, problem, episodes=300, epsilon=0.4, gamma=0.9, lr=0.001):
+        super().__init__(problem, episodes, epsilon, gamma, lr)
+
+    def run(self, track_history=True, **kwargs):
+        start_time = time.time()
         best_solution = None
         best_score = float("inf")
-        history = [] if track_history else None
-        all_schedules = [] if track_schedule else None
+        history = []
 
         for ep in range(self.episodes):
-            # 添加打印训练轮数的语句
-            print(f"DQNAgentSolver (Naive) - Episode {ep + 1}/{self.episodes}")
-            job_ptrs, job_ready = self._get_initial_state()
-            machine_ready = [0] * self.problem.num_machines
-            sequence = []
+            ptrs = [0] * self.num_jobs
+            j_ready = [0] * self.num_jobs
+            m_ready = [0] * self.num_machines
+            seq = []
+            prev_mk = 0
 
-            while not self._is_terminal(job_ptrs):
-                available = self._get_available_jobs(job_ptrs)
-                state_tensor = self._build_state_vector(job_ptrs, job_ready).unsqueeze(0)
-                q_values = self.qnet(state_tensor).detach().cpu().numpy()[0]
+            state = self._get_state(ptrs, j_ready, m_ready)
 
-                if random.random() < self.epsilon:
-                    action = random.choice(available)
-                else:
-                    mask = np.full(self.num_jobs, -np.inf)
-                    for j in available:
-                        mask[j] = q_values[j]
-                    action = int(np.argmax(mask))
+            while not all(ptrs[j] >= self.job_counts[j] for j in range(self.num_jobs)):
+                avail = [j for j in range(self.num_jobs) if ptrs[j] < self.job_counts[j]]
+                action = self._choose_action(state, avail)
+                seq.append(action)
 
-                sequence.append(action)
+                # Step
+                task = self.problem.jobs[action].tasks[ptrs[action]]
+                m_id = task.machine_id
+                start = max(m_ready[m_id], j_ready[action])
+                end = start + task.duration
+                gap = start - m_ready[m_id]
 
-                # Simulate the operation
-                op_idx = job_ptrs[action]
-                task = self.problem.jobs[action].tasks[op_idx]
-                machine, proc_time = task.machine_id, task.duration
-                start_time = max(machine_ready[machine], job_ready[action])
-                end_time = start_time + proc_time
+                next_ptrs = ptrs[:]
+                next_ptrs[action] += 1
+                next_jr = j_ready[:]
+                next_jr[action] = end
+                next_mr = m_ready[:]
+                next_mr[m_id] = end
 
-                # Update state
-                job_ptrs[action] += 1
-                job_ready[action] = end_time
-                machine_ready[machine] = end_time
+                # Reward
+                curr_mk = max(next_mr)
+                r = (prev_mk - curr_mk) + self.norm_p[action].item() * 5.0 - 0.1 * gap
+                prev_mk = curr_mk
 
-                # Q-learning update (no replay buffer yet)
-                next_state_tensor = self._build_state_vector(job_ptrs, job_ready).unsqueeze(0)
-                with torch.no_grad():
-                    next_q = self.qnet(next_state_tensor)
-                    max_future_q = torch.max(next_q[0][available]).item() if available else 0
+                next_state = self._get_state(next_ptrs, next_jr, next_mr)
+                done = all(next_ptrs[j] >= self.job_counts[j] for j in range(self.num_jobs))
 
-                target_q = q_values[:]
-                reward = -1 if not self._is_terminal(job_ptrs) else -self.problem.evaluate(sequence)
-                target_q[action] = reward + self.gamma * max_future_q
+                # === Naive 核心区别：单步训练 (Online Update) ===
+                # 没有 Buffer，直接用当前这一步数据训练
+                target = r
+                if not done:
+                    with torch.no_grad():
+                        # 简单的 Q-Learning 公式
+                        target += self.gamma * self.qnet(next_state.unsqueeze(0)).max().item()
 
-                pred_q = self.qnet(state_tensor)[0]
-                target_tensor = torch.tensor(target_q, dtype=torch.float32, device=self.device)
+                pred = self.qnet(state.unsqueeze(0))[0][action]
+                loss = self.loss_fn(pred, torch.tensor(target, device=self.device))
 
-                loss = self.loss_fn(pred_q, target_tensor)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+                # ==============================================
 
-            # End of episode
-            final_score = self.problem.evaluate(sequence)
-            if final_score < best_score:
-                best_score = final_score
-                best_solution = sequence[:]
-
-            if track_history:
-                history.append(best_score)
-            if track_schedule:
-                all_schedules.append(self.problem.get_schedule(best_solution[:]))
-
-        return best_solution, best_score, history, all_schedules
-
-
-class DQNAgentSolverReplay(BaseSolver):
-    def __init__(self, problem, episodes=400, epsilon=1.0, epsilon_min=0.05,
-                epsilon_decay=0.995, gamma=0.95, lr=1e-3,
-                buffer_capacity=10000, batch_size=64, target_update_freq=10):
-        super().__init__(problem)
-        self.episodes = episodes
-        self.epsilon = epsilon
-        self.epsilon_min = epsilon_min
-        self.epsilon_decay = epsilon_decay
-        self.gamma = gamma
-        self.lr = lr
-        self.batch_size = batch_size
-        self.target_update_freq = target_update_freq
-
-        self.job_counts = [len(job) for job in problem.jobs]
-        self.num_jobs = len(self.job_counts)
-        self.total_ops = sum(self.job_counts)
-        self.input_size = self.num_jobs * 2
-        self.output_size = self.num_jobs
-
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        self.qnet = QNetwork(self.input_size, self.output_size).to(self.device)
-        self.target_qnet = QNetwork(self.input_size, self.output_size).to(self.device)
-        self.target_qnet.load_state_dict(self.qnet.state_dict())
-        self.target_qnet.eval()
-
-        self.optimizer = optim.Adam(self.qnet.parameters(), lr=self.lr)
-        self.loss_fn = nn.MSELoss()
-        self.buffer = ReplayBuffer(capacity=buffer_capacity)
-
-    def _build_state_tensor(self, job_ptrs, job_ready):
-        return torch.tensor(job_ptrs + job_ready, dtype=torch.float32, device=self.device)
-
-    def _get_available_jobs(self, job_ptrs):
-        return [j for j in range(self.num_jobs) if job_ptrs[j] < self.job_counts[j]]
-
-    def _is_terminal(self, job_ptrs):
-        return all(job_ptrs[j] >= self.job_counts[j] for j in range(self.num_jobs))
-
-    def _shaped_reward(self, current_makespan, previous_makespan):
-        # Encourage reductions in makespan
-        if previous_makespan is None:
-            return 0
-        return previous_makespan - current_makespan
-
-    def train_step(self):
-        if len(self.buffer) < self.batch_size:
-            return
-
-        states, actions, rewards, next_states, dones = self.buffer.sample(self.batch_size)
-
-        states = torch.stack(states)
-        actions = torch.tensor(actions, dtype=torch.int64, device=self.device)
-        rewards = torch.tensor(rewards, dtype=torch.float32, device=self.device)
-        next_states = torch.stack(next_states)
-        dones = torch.tensor(dones, dtype=torch.float32, device=self.device)
-
-        q_values = self.qnet(states)
-        target_q_values = self.target_qnet(next_states).detach()
-
-        q_selected = q_values.gather(1, actions.view(-1, 1)).squeeze(1)
-        max_target_q = target_q_values.max(dim=1)[0]
-        targets = rewards + self.gamma * max_target_q * (1 - dones)
-
-        loss = self.loss_fn(q_selected, targets)
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-
-    def run(self, track_history=True, track_schedule=False):
-        best_solution = None
-        best_score = float("inf")
-        history = [] if track_history else None
-        all_schedules = [] if track_schedule else None
-
-        for ep in range(self.episodes):
-            # 添加打印训练轮数的语句
-            print(f"DQNAgentSolver (replay) - Episode {ep + 1}/{self.episodes}")
-            job_ptrs = [0] * self.num_jobs
-            job_ready = [0] * self.num_jobs
-            machine_ready = [0] * self.problem.num_machines
-            state = self._build_state_tensor(job_ptrs, job_ready)
-            sequence = []
-            prev_makespan = None
-
-            while not self._is_terminal(job_ptrs):
-                available = self._get_available_jobs(job_ptrs)
-
-                with torch.no_grad():
-                    q_vals = self.qnet(state.unsqueeze(0)).cpu().numpy()[0]
-                    masked_q = np.full(self.num_jobs, -np.inf)
-                    for j in available:
-                        masked_q[j] = q_vals[j]
-
-                if random.random() < self.epsilon:
-                    action = random.choice(available)
-                else:
-                    action = int(np.argmax(masked_q))
-
-                op_idx = job_ptrs[action]
-                task = self.problem.jobs[action].tasks[op_idx]
-                machine, proc_time = task.machine_id, task.duration
-                start_time = max(machine_ready[machine], job_ready[action])
-                end_time = start_time + proc_time
-
-                # Apply action
-                job_ptrs[action] += 1
-                job_ready[action] = end_time
-                machine_ready[machine] = end_time
-                next_state = self._build_state_tensor(job_ptrs, job_ready)
-
-                sequence.append(action)
-                current_makespan = self.problem.evaluate(sequence)
-
-                # Reward shaping
-                reward = self._shaped_reward(current_makespan, prev_makespan)
-                prev_makespan = current_makespan
-                done = self._is_terminal(job_ptrs)
-
-                self.buffer.add(state, action, reward, next_state, done)
                 state = next_state
+                ptrs, j_ready, m_ready = next_ptrs, next_jr, next_mr
 
-                self.train_step()
-
-            # Target network update
-            if ep % self.target_update_freq == 0:
-                self.target_qnet.load_state_dict(self.qnet.state_dict())
-
-            score = self.problem.evaluate(sequence)
+            score = max(m_ready)
             if score < best_score:
                 best_score = score
-                best_solution = sequence[:]
+                best_solution = seq[:]
+            if track_history: history.append(int(best_score))
+            self.epsilon = max(0.05, self.epsilon * 0.99)
 
-            if track_history:
-                history.append(best_score)
-            if track_schedule:
-                all_schedules.append(self.problem.get_schedule(best_solution[:]))
+        # 简单的微调
+        if best_solution:
+            best_solution, best_score = apply_local_search(self.problem, best_solution)
 
-            # Decay epsilon
-            self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+        return {
+            "algorithm": "DQN (Naive)",
+            "best_score": int(best_score),
+            "best_solution": [int(x) for x in best_solution] if best_solution else [],
+            "runtime_sec": float(round(time.time() - start_time, 4)),
+            "history": [int(x) for x in history],
+            "gantt_data": self.problem.get_schedule(best_solution)
+        }
 
-        return best_solution, best_score, history, all_schedules
-    
+
+# ==========================================
+# 4. Replay DQN (经验回放版)
+#    区别：有 Buffer，批量训练，更稳定
+# ==========================================
+class DQNAgentSolverReplay(BaseDQNSolver):
+    def __init__(self, problem, episodes=500, epsilon=0.5, gamma=0.99, lr=0.0005):
+        super().__init__(problem, episodes, epsilon, gamma, lr)
+        # Replay 特有的组件
+        self.buffer = deque(maxlen=2000)
+        self.batch_size = 32
+        # Target Network (Replay 版标配，增加稳定性)
+        self.target_qnet = SimpleQNet(self.input_size, self.output_size).to(self.device)
+        self.target_qnet.load_state_dict(self.qnet.state_dict())
+
+    def run(self, track_history=True, **kwargs):
+        start_time = time.time()
+        best_solution = None
+        best_score = float("inf")
+        history = []
+        step_count = 0
+
+        for ep in range(self.episodes):
+            ptrs = [0] * self.num_jobs
+            j_ready = [0] * self.num_jobs
+            m_ready = [0] * self.num_machines
+            seq = []
+            prev_mk = 0
+
+            state = self._get_state(ptrs, j_ready, m_ready)
+
+            while not all(ptrs[j] >= self.job_counts[j] for j in range(self.num_jobs)):
+                avail = [j for j in range(self.num_jobs) if ptrs[j] < self.job_counts[j]]
+                action = self._choose_action(state, avail)
+                seq.append(action)
+
+                # Step
+                task = self.problem.jobs[action].tasks[ptrs[action]]
+                m_id = task.machine_id
+                start = max(m_ready[m_id], j_ready[action])
+                end = start + task.duration
+                gap = start - m_ready[m_id]
+
+                next_ptrs = ptrs[:]
+                next_ptrs[action] += 1
+                next_jr = j_ready[:]
+                next_jr[action] = end
+                next_mr = m_ready[:]
+                next_mr[m_id] = end
+
+                curr_mk = max(next_mr)
+                r = (prev_mk - curr_mk) + self.norm_p[action].item() * 5.0 - 0.1 * gap
+                prev_mk = curr_mk
+
+                next_state = self._get_state(next_ptrs, next_jr, next_mr)
+                done = all(next_ptrs[j] >= self.job_counts[j] for j in range(self.num_jobs))
+
+                # === Replay 核心区别：存 Buffer + 批量训练 ===
+                self.buffer.append((state, action, r, next_state, done))
+
+                if len(self.buffer) > self.batch_size:
+                    batch = random.sample(self.buffer, self.batch_size)
+                    bs, ba, br, bns, bd = zip(*batch)
+
+                    bs_t = torch.stack(bs)
+                    ba_t = torch.tensor(ba, device=self.device).long().unsqueeze(1)
+                    br_t = torch.tensor(br, device=self.device).float()
+                    bns_t = torch.stack(bns)
+                    bd_t = torch.tensor(bd, device=self.device).float()
+
+                    # 当前 Q
+                    q_curr = self.qnet(bs_t).gather(1, ba_t).squeeze()
+
+                    # Target Q (Double DQN 简化版，用 Target Net 估值)
+                    with torch.no_grad():
+                        q_next = self.target_qnet(bns_t).max(1)[0]
+                        target = br_t + self.gamma * q_next * (1 - bd_t)
+
+                    loss = self.loss_fn(q_curr, target)
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    self.optimizer.step()
+                # ============================================
+
+                state = next_state
+                ptrs, j_ready, m_ready = next_ptrs, next_jr, next_mr
+                step_count += 1
+
+            if ep % 20 == 0:
+                self.target_qnet.load_state_dict(self.qnet.state_dict())
+
+            score = max(m_ready)
+            if score < best_score:
+                best_score = score
+                best_solution = seq[:]
+            if track_history: history.append(int(best_score))
+            self.epsilon = max(0.05, self.epsilon * 0.99)
+
+        if best_solution:
+            best_solution, best_score = apply_local_search(self.problem, best_solution)
+
+        return {
+            "algorithm": "DQN (Replay)",
+            "best_score": int(best_score),
+            "best_solution": [int(x) for x in best_solution] if best_solution else [],
+            "runtime_sec": float(round(time.time() - start_time, 4)),
+            "history": [int(x) for x in history],
+            "gantt_data": self.problem.get_schedule(best_solution)
+        }

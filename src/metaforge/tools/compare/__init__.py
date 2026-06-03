@@ -1,0 +1,3 @@
+from metaforge.tools.compare.variants import register_compare_variants_tool
+
+register_compare_variants_tool()

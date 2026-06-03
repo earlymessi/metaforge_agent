@@ -6,6 +6,26 @@ MetaForge is a modular Python toolkit for solving **Job Shop Scheduling Problems
 
 ---
 
+## 🏭 MES 排产系统（本仓库交付形态）
+
+本仓库除算法库外，还提供 **FastAPI + MongoDB + Vue3** 的车间排产 Web 应用：
+
+- **运行手册**：见 [`star.md`](star.md)（MongoDB 启动、后端、前端构建）
+- **新前端**：构建后访问 **`http://127.0.0.1:8008/new-ui/`**（唯一端口，见 `scripts/restart_backend.ps1`）（根路径 `/` 亦可）
+- **改进路线图**：见 [`docs/改进计划.md`](docs/改进计划.md)
+- **多智能体**：见 [`docs/智能体功能清单.md`](docs/智能体功能清单.md)（六大 Agent 主参考）、[`docs/多智能体开发进度.md`](docs/多智能体开发进度.md)、[`docs/README.md`](docs/README.md)
+
+快速启动（Windows PowerShell）：
+
+```powershell
+Start-Service MongoDB
+pip install -e .
+cd frontend; npm install; npm run build; cd ..
+cd tests; python main.py
+```
+
+---
+
 ## 🎯 Key Features
 
 - ✅ Solve classic benchmark problems (OR-Library, JSON)

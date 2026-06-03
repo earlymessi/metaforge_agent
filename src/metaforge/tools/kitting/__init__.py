@@ -1,0 +1,3 @@
+from metaforge.tools.kitting.build_report import register_kitting_build_report_tool
+
+register_kitting_build_report_tool()

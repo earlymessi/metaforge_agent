@@ -1,0 +1,279 @@
+{
+  "generated_at": "2026-05-31T07:22:33.366291+00:00",
+  "exec_mode": false,
+  "react": false,
+  "reflect": false,
+  "results": [
+    {
+      "case_id": "sch_tabu_delivery",
+      "message": "用禁忌搜索，交付优先排程",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要用禁忌搜索算法进行排程",
+        "· 不涉及计划库档案操作",
+        "· 涉及算法选择和排程计算",
+        "· 选 schedule",
+        "结论：使用禁忌搜索算法按交付优先排程",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 46125.9,
+      "expect_agent": "scheduling",
+      "note": "算法+策略"
+    },
+    {
+      "case_id": "sch_compare_ga_sa",
+      "message": "对比一下遗传算法和模拟退火",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要对比两种排程算法",
+        "· 不涉及计划库档案操作",
+        "· 是对已有工单做排程计算",
+        "· 不是多策略方案whatif",
+        "· 选schedule",
+        "结论：对比求解器排程，非方案对比Agent",
+        "识别 intent：排程（schedule）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 55472.8,
+      "expect_agent": "scheduling",
+      "note": "多算法对比"
+    },
+    {
+      "case_id": "sch_benchmark",
+      "message": "跑一下 ft06 算例，吞吐优先",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要运行ft06算例并使用吞吐优先策略",
+        "· 不涉及计划库档案操作",
+        "· 涉及选择排程策略和计算",
+        "· 选schedule",
+        "结论：对指定算例使用吞吐优先策略进行排程计算",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 16017.2,
+      "expect_agent": "scheduling",
+      "note": "标准算例"
+    },
+    {
+      "case_id": "sch_fast",
+      "message": "快速先出个结果",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户想要快速得到一个结果",
+        "· 没有明确涉及计划库档案",
+        "· 可能涉及排程计算",
+        "· 最终选择 schedule",
+        "结论：用户要求快速出结果，可能是排程计算需求",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 1 步"
+      ],
+      "error": "",
+      "elapsed_ms": 59173.9,
+      "expect_agent": "scheduling",
+      "note": "快速模式"
+    },
+    {
+      "case_id": "sch_vague",
+      "message": "帮我排一下",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "rule",
+      "tools": [
+        "scheduling.ask_clarification"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户请求排程",
+        "· 不涉及计划库档案",
+        "· 属于排程计算",
+        "· 选 schedule",
+        "结论：简单排程请求，未指定计划库操作",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "使用 Agent 内置规则模板",
+        "共 1 步"
+      ],
+      "error": "",
+      "elapsed_ms": 28028.6,
+      "expect_agent": "scheduling",
+      "note": "模糊意图，可能澄清"
+    },
+    {
+      "case_id": "sch_full_compare",
+      "message": "按交期优先，全量对比所有算法",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要按交期优先对比排程算法",
+        "· 不涉及计划库档案操作",
+        "· 需要选择算法并生成甘特图对比",
+        "· 属于排程计算范畴",
+        "· 最终选schedule",
+        "结论：按交期优先对比算法排程，非计划库操作",
+        "识别 intent：排程（schedule）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 32945.0,
+      "expect_agent": "scheduling",
+      "note": "目标驱动全量对比"
+    },
+    {
+      "case_id": "sch_no_material",
+      "message": "用 SPT 排程，不考虑物料",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "llm",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent",
+        "scheduling.run"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "意图识别（智谱 GLM）",
+        "· 用户要用SPT算法进行排程",
+        "· 不涉及计划库档案操作",
+        "· 涉及算法选择和排程计算",
+        "· 选schedule",
+        "结论：使用SPT算法排程，非计划库操作",
+        "识别 intent：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 2 步"
+      ],
+      "error": "",
+      "elapsed_ms": 58398.9,
+      "expect_agent": "scheduling",
+      "note": "关闭物料"
+    },
+    {
+      "case_id": "sch_explicit",
+      "message": "排程",
+      "domain": "scheduling",
+      "ok": true,
+      "agent_id": "scheduling",
+      "router": "explicit",
+      "router_intent": "schedule",
+      "plan_planner": "llm",
+      "tools": [
+        "scheduling.parse_intent"
+      ],
+      "parse_planner": "",
+      "status": "preview",
+      "summary_zh": "",
+      "route_lines": [
+        "用户指定意图：排程（schedule）",
+        "选中 Agent：智能排程 Agent（scheduling）"
+      ],
+      "plan_lines": [
+        "由 GLM 生成 Tool 调用链（白名单校验）",
+        "共 1 步"
+      ],
+      "error": "",
+      "elapsed_ms": 30638.9,
+      "expect_agent": "scheduling",
+      "note": "显式 intent"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+from metaforge.tools.events.check_insert_job import register_events_check_insert_job_tool
+from metaforge.tools.events.list_event_types import register_events_list_event_types_tool
+from metaforge.tools.events.merge_insert_job import register_events_merge_insert_job_tool
+from metaforge.tools.events.parse_event import register_events_parse_tool
+from metaforge.tools.events.reschedule import register_events_reschedule_tool
+
+register_events_list_event_types_tool()
+register_events_parse_tool()
+register_events_check_insert_job_tool()
+register_events_merge_insert_job_tool()
+register_events_reschedule_tool()
