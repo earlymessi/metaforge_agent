@@ -19,6 +19,7 @@ export function buildMachinesFromGantt(gantt, simTime, layoutMachines = []) {
     return {
       id: mid,
       x: Number(m.x),
+      y: Number(m.y ?? 7.5),
       z: Number(m.z),
       status,
       current_job,

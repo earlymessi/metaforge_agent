@@ -13,6 +13,20 @@ def test_normalize_router_payload_unknown_intent():
     assert out["agent_id"] == "scheduling"
 
 
+def test_normalize_router_payload_unsupported():
+    out = normalize_router_payload(
+        {
+            "intent": "unsupported",
+            "scope_category": "mes_execution",
+            "reason_zh": "MES 执行",
+        },
+        message="哪个订单在执行",
+    )
+    assert out.get("out_of_scope") is True
+    assert out["intent"] == "unsupported"
+    assert out["agent_id"] is None
+
+
 @patch("metaforge.orchestrator.llm_router.invoke")
 def test_classify_message_with_llm(mock_invoke):
     mock_invoke.return_value = {

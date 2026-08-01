@@ -130,7 +130,7 @@
           :stroke-width="10"
           class="mt"
         />
-        <DigitalTwinMap
+        <DigitalTwinPanel
           class="mt"
           :machines="twinMachines"
           :agvs="twinAux.agvs"
@@ -163,9 +163,17 @@
           <el-col :lg="6" :md="12" :sm="24">
             <el-card shadow="never">
               <template #header><div class="h2">在岗人员</div></template>
-              <el-table :data="twinAux.staff" size="small" max-height="280">
-                <el-table-column prop="id" label="ID" width="70" />
-                <el-table-column prop="name" label="姓名" />
+              <el-table :data="twinAux.staff" size="small" max-height="280" empty-text="当前时刻无派工">
+                <el-table-column prop="name" label="姓名" width="72" />
+                <el-table-column label="机台" width="72">
+                  <template #default="{ row }">M{{ row.machine_id }}</template>
+                </el-table-column>
+                <el-table-column prop="job_name" label="工单" min-width="90" />
+                <el-table-column label="技能" min-width="90">
+                  <template #default="{ row }">
+                    {{ (row.skills || []).join('、') || '-' }}
+                  </template>
+                </el-table-column>
               </el-table>
             </el-card>
           </el-col>
@@ -215,7 +223,7 @@ import { ElMessage } from 'element-plus'
 import { api } from '../api/client'
 import MesReschedulePanel from '../components/MesReschedulePanel.vue'
 import ExecutionGanttChart from '../components/ExecutionGanttChart.vue'
-import DigitalTwinMap from '../components/DigitalTwinMap.vue'
+import DigitalTwinPanel from '../components/DigitalTwinPanel.vue'
 import { useResultsStore } from '../stores/useResultsStore'
 import { useWorkContextStore } from '../stores/useWorkContextStore'
 import {

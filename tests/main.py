@@ -177,16 +177,32 @@ async def lifespan(app: FastAPI):
         if s_count == 0:
             print("[Lifespan] 初始化员工花名册...")
             default_staff = [
-                {"id": 1, "name": "张三", "role": "组长", "is_active": True},
-                {"id": 2, "name": "李四", "role": "操作员", "is_active": True},
-                {"id": 3, "name": "王五", "role": "操作员", "is_active": True},
-                {"id": 4, "name": "赵六", "role": "操作员", "is_active": True},
-                {"id": 5, "name": "钱七", "role": "操作员", "is_active": True},
-                {"id": 6, "name": "孙八", "role": "质检", "is_active": False},
-                {"id": 7, "name": "周九", "role": "操作员", "is_active": True},
-                {"id": 8, "name": "吴十", "role": "实习生", "is_active": True},
+                {"id": 1, "name": "张三", "role": "组长", "skills": ["管理", "数控"], "shift": "早班", "level": "L3", "is_active": True},
+                {"id": 2, "name": "李四", "role": "操作员", "skills": ["数控", "装配"], "shift": "早班", "level": "L2", "is_active": True},
+                {"id": 3, "name": "王五", "role": "操作员", "skills": ["数控"], "shift": "早班", "level": "L2", "is_active": True},
+                {"id": 4, "name": "赵六", "role": "操作员", "skills": ["数控", "磨床"], "shift": "中班", "level": "L2", "is_active": True},
+                {"id": 5, "name": "钱七", "role": "操作员", "skills": ["数控"], "shift": "中班", "level": "L1", "is_active": True},
+                {"id": 6, "name": "孙八", "role": "质检", "skills": ["质检"], "shift": "早班", "level": "L2", "is_active": False},
+                {"id": 7, "name": "周九", "role": "操作员", "skills": ["数控", "装配"], "shift": "晚班", "level": "L2", "is_active": True},
+                {"id": 8, "name": "吴十", "role": "实习生", "skills": ["辅助"], "shift": "早班", "level": "L1", "is_active": True},
             ]
             await staff_collection.insert_many(default_staff)
+        else:
+            staff_skill_defaults = {
+                1: {"skills": ["管理", "数控"], "shift": "早班", "level": "L3"},
+                2: {"skills": ["数控", "装配"], "shift": "早班", "level": "L2"},
+                3: {"skills": ["数控"], "shift": "早班", "level": "L2"},
+                4: {"skills": ["数控", "磨床"], "shift": "中班", "level": "L2"},
+                5: {"skills": ["数控"], "shift": "中班", "level": "L1"},
+                6: {"skills": ["质检"], "shift": "早班", "level": "L2"},
+                7: {"skills": ["数控", "装配"], "shift": "晚班", "level": "L2"},
+                8: {"skills": ["辅助"], "shift": "早班", "level": "L1"},
+            }
+            for sid, patch in staff_skill_defaults.items():
+                await staff_collection.update_one(
+                    {"id": sid, "skills": {"$exists": False}},
+                    {"$set": patch},
+                )
     except Exception as e:
         print(f"[WARN] 员工初始化失败: {e}")
 
@@ -1682,8 +1698,28 @@ async def orchestrator_run(req: OrchestratorRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     route = preview.get("route") or resolve_agent_route(req.message, req.intent, ctx)
-    agent_id = preview["agent_id"]
+    agent_id = preview.get("agent_id")
     preview_trace: List[Dict[str, Any]] = list(preview.get("trace") or [])
+
+    if route.get("out_of_scope") or preview.get("status") == "out_of_scope":
+        out = {
+            "status": "out_of_scope",
+            "agent_id": None,
+            "summary_zh": route.get("guidance_zh") or preview.get("summary_zh") or "",
+            "scope_category": route.get("scope_category"),
+            "execution_trace": preview_trace,
+            "router_planner": route.get("router"),
+            "router_intent": route.get("intent"),
+            "router_reason_zh": route.get("reason_zh"),
+        }
+        out["session_id"] = persist_after_run(
+            session_id,
+            agent_id="",
+            request_context=ctx,
+            response=out,
+        )
+        return out
+
     params = dict(req.params or {})
     if ctx.get("confirm_token") and "confirm_token" not in params:
         params["confirm_token"] = ctx["confirm_token"]
@@ -2418,11 +2454,13 @@ async def due_date_reschedule(req: DueDateRescheduleRequest):
 
 
 @app.post("/api/staffing/analyze")
-def analyze_staffing(schedule_data: List[Dict[str, Any]]):
+async def analyze_staffing(schedule_data: List[Dict[str, Any]]):
     """
     分析排程数据，计算每小时的人力需求
-    假设：1 台运行中的机器 = 1 名操作员
+    假设：1 台运行中的机器 = 1 名具备数控技能的操作员
     """
+    from metaforge.services.staff_dispatch import staff_can_operate
+
     if not schedule_data:
         return {"timeline": [], "stats": {}}
 
@@ -2464,14 +2502,41 @@ def analyze_staffing(schedule_data: List[Dict[str, Any]]):
             "machines": sorted(list(set(machine_details[t])))  # 去重并排序
         })
 
+    staff_docs = await staff_collection.find({"is_active": True}).to_list(100)
+    skilled_active = sum(1 for s in staff_docs if staff_can_operate(s, 0))
+
     return {
         "timeline": timeline_data,
         "stats": {
             "max_peak": max_staff,
             "avg_load": round(avg_staff, 2),
-            "total_hours": total_man_hours
+            "total_hours": total_man_hours,
+            "skilled_active": skilled_active,
+            "peak_shortage": max(0, max_staff - skilled_active),
         }
     }
+
+
+class StaffDispatchBody(BaseModel):
+    schedule_data: List[Dict[str, Any]]
+    sim_time: float = 0
+
+
+@app.post("/api/staffing/dispatch")
+async def staffing_dispatch(body: StaffDispatchBody):
+    """按甘特时刻预览人员派工（机台值守 / 待命 / 巡检）及孪生坐标。"""
+    from metaforge.services.staff_dispatch import build_staff_dispatch_preview
+
+    staff = await staff_collection.find().sort("id", 1).to_list(100)
+    machines = await machine_collection.find().sort("id", 1).to_list(200)
+    return build_staff_dispatch_preview(
+        body.schedule_data or [],
+        staff,
+        machines,
+        float(body.sim_time or 0),
+    )
+
+
 # === 员工管理 API ===
 
 @app.get("/api/staff/list")
@@ -2703,6 +2768,7 @@ async def get_logistics_layout():
                 "id": int(m["id"]),
                 "name": m.get("name", f"Machine-{m['id']}"),
                 "x": float(m.get("x", 0.0)),
+                "y": float(m.get("y", 7.5)),
                 "z": float(m.get("z", 0.0)),
             }
             for m in docs
@@ -2949,6 +3015,7 @@ async def get_digital_twin_snapshot(
                     {
                         "id": m["id"],
                         "x": m["x"],
+                        "y": float(m.get("y", 7.5)),
                         "z": m["z"],
                         "status": "running" if is_running else "idle",
                         "current_job": "",
@@ -2956,7 +3023,12 @@ async def get_digital_twin_snapshot(
                 )
 
     agv_data = await build_agv_snapshot(agv_fleet_collection, db_machines)
-    staff_data = await build_staff_snapshot(staff_collection)
+    staff_data = await build_staff_snapshot(
+        staff_collection,
+        db_machines,
+        gantt=gantt if gantt else None,
+        sim_time=current_sim_time,
+    )
 
     return {
         "machines": machines_snapshot,

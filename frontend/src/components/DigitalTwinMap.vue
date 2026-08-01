@@ -39,12 +39,6 @@
       </g>
     </svg>
     <el-empty v-else description="暂无机台布局" :image-size="64" />
-    <div v-if="machines.length" class="legend">
-      <span><i class="dot run" />运行中</span>
-      <span><i class="dot idle" />空闲</span>
-      <span><i class="dot agv" />AGV</span>
-      <span><i class="dot staff" />人员</span>
-    </div>
   </div>
 </template>
 
@@ -91,24 +85,4 @@ function flipZ(z) {
   border-radius: 8px;
   border: 1px solid #2c3e50;
 }
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 10px;
-  font-size: 12px;
-  color: #606266;
-}
-.dot {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  margin-right: 4px;
-  vertical-align: middle;
-  border-radius: 2px;
-}
-.dot.run { background: #00c9a7; }
-.dot.idle { background: #3d4f63; }
-.dot.agv { background: #e6a23c; border-radius: 50%; }
-.dot.staff { background: #f56c6c; border-radius: 50%; }
 </style>

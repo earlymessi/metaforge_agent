@@ -31,7 +31,7 @@ INTENT_TO_AGENT = {
 AGENT_TO_INTENT = {v: k for k, v in INTENT_TO_AGENT.items() if k != "pipeline"}
 
 # 启动后可在 /api/llm/status 核对；若与助手 trace 不一致说明未加载本文件
-ROUTER_BUILD_ID = "2026-05-31-six-agents-v1"
+ROUTER_BUILD_ID = "2026-06-05-llm-scope-v2"
 
 # 改交期/插单/故障等动态事件 → events Agent（非 commitment 问询）
 _RESCHEDULE_EVENT_RE = re.compile(
@@ -410,7 +410,9 @@ def _apply_insert_followup_guard(route: Dict[str, Any], message: str) -> Dict[st
 
 
 def _apply_route_guards(route: Dict[str, Any], message: str) -> Dict[str, Any]:
-    """LLM / 规则 / rule_fallback 路由后的安全护栏。"""
+    """LLM / 规则 / rule_fallback 路由后的安全护栏（能力范围由 GLM intent=unsupported 判定）。"""
+    if route.get("out_of_scope"):
+        return route
     route = _apply_events_catalog_guard(route, message)
     route = _apply_kitting_schedule_predict_guard(route, message)
     route = _apply_whatif_guard(route, message)
@@ -497,6 +499,10 @@ def resolve_agent_route(
             from metaforge.orchestrator.llm_router import classify_message_with_llm
 
             data = classify_message_with_llm(msg)
+            if data.get("out_of_scope"):
+                route = dict(data)
+                route.setdefault("router_build_id", ROUTER_BUILD_ID)
+                return route
             route = {
                 "agent_id": data["agent_id"],
                 "router": "llm",

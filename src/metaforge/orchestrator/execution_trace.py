@@ -23,8 +23,59 @@ def _agent_label(agent_id: str) -> str:
     return _AGENT_NAME.get(agent_id, agent_id)
 
 
+def build_scope_guidance_trace(route: Dict[str, Any]) -> Dict[str, Any]:
+    lines = [
+        "问题超出六个业务 Agent 能力范围，已拦截执行",
+        f"类别：{route.get('scope_category', 'unknown')}",
+    ]
+    if route.get("llm_misroute"):
+        lines.append(f"原 GLM 误识别 intent：{route['llm_misroute']}")
+    if route.get("reason_zh"):
+        lines.append(route["reason_zh"])
+    guidance = route.get("guidance_zh") or ""
+    for part in guidance.split("\n"):
+        part = part.strip()
+        if part:
+            lines.append(part)
+    return {
+        "phase": "scope",
+        "title": "② 能力范围提示",
+        "planner": route.get("router") or "scope_block",
+        "lines": lines,
+        "scope_category": route.get("scope_category"),
+    }
+
+
 def build_route_trace(route: Dict[str, Any]) -> Dict[str, Any]:
     router = route.get("router") or "rule"
+    if route.get("out_of_scope"):
+        agent_id = None
+        intent = route.get("intent") or "unsupported"
+        lines: List[str] = ["意图识别后触发能力范围护栏（不进入任何 Agent）"]
+        if router in ("llm", "llm_guard"):
+            lines[0] = "意图识别（智谱 GLM）→ 能力范围纠正"
+            for step in route.get("reasoning_steps") or []:
+                lines.append(f"· {step}")
+        if route.get("llm_misroute"):
+            lines.append(f"原 GLM intent：{route['llm_misroute']}")
+        if route.get("reason_zh"):
+            lines.append(f"结论：{route['reason_zh']}")
+        lines.append(f"识别 intent：超出范围（{intent}）")
+        lines.append("未选中业务 Agent（问题已拦截）")
+        build_id = route.get("router_build_id")
+        if build_id:
+            lines.append(f"路由版本：{build_id}")
+        return {
+            "phase": "route",
+            "title": "① 意图路由",
+            "planner": router,
+            "lines": lines,
+            "agent_id": agent_id,
+            "intent": intent,
+            "out_of_scope": True,
+            "scope_category": route.get("scope_category"),
+        }
+
     agent_id = route.get("agent_id") or "scheduling"
     intent = route.get("intent")
     lines: List[str] = []

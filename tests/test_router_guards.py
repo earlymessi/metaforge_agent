@@ -128,3 +128,45 @@ def test_kitting_on_time_start_message():
     route = {"agent_id": "scheduling", "intent": "schedule", "router": "llm"}
     out = _apply_route_guards(route, "这批订单能否按时开工")
     assert out["agent_id"] == "kitting"
+
+
+def test_parse_router_unsupported_mes_execution():
+    from metaforge.orchestrator.llm.parsers import parse_router
+
+    out = parse_router(
+        {
+            "intent": "unsupported",
+            "scope_category": "mes_execution",
+            "reason_zh": "MES 现场执行监控",
+            "reasoning_steps": ["问执行状态", "非交期评估"],
+        },
+        message="目前的执行情况如何 在进行哪个订单",
+    )
+    assert out.get("out_of_scope") is True
+    assert out["scope_category"] == "mes_execution"
+    assert out["agent_id"] is None
+    assert "生产看板" in (out.get("guidance_zh") or "")
+
+
+def test_resolve_agent_route_llm_unsupported():
+    from unittest.mock import patch
+
+    from metaforge.orchestrator.router import resolve_agent_route
+
+    with patch("metaforge.orchestrator.llm_router.classify_message_with_llm") as mock_cls:
+        mock_cls.return_value = {
+            "out_of_scope": True,
+            "agent_id": None,
+            "intent": "unsupported",
+            "scope_category": "mes_execution",
+            "router": "llm",
+            "reason_zh": "MES 执行态",
+            "guidance_zh": "请去生产看板",
+        }
+        with patch.dict(
+            "os.environ",
+            {"LLM_ENABLED": "1", "ZHIPU_API_KEY": "k", "LLM_ROUTER": "glm"},
+        ):
+            route = resolve_agent_route("目前执行情况如何")
+    assert route.get("out_of_scope") is True
+    assert route["scope_category"] == "mes_execution"

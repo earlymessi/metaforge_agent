@@ -112,8 +112,14 @@ def iter_preview_trace_blocks(
     params: Optional[Dict[str, Any]] = None,
 ):
     """按阶段产出 trace 块（路由 → 计划 → 解析），供流式推送。"""
+    from metaforge.orchestrator.execution_trace import build_scope_guidance_trace
+
     route = resolve_route_phase(message, intent, context=context)
     yield build_route_trace(route)
+
+    if route.get("out_of_scope"):
+        yield build_scope_guidance_trace(route)
+        return route, None, None, [], "scope_block", None
 
     agent, areq, steps, plan_planner, plan_block = resolve_plan_phase(
         route, message, context=context, params=params
@@ -143,8 +149,9 @@ def build_orchestrator_preview(
     except StopIteration as stop:
         route, agent, areq, steps, plan_planner, _parse = stop.value
     agent_id = route["agent_id"]
+    status = "out_of_scope" if route.get("out_of_scope") else "preview"
     return {
-        "status": "preview",
+        "status": status,
         "agent_id": agent_id,
         "route": route,
         "router_planner": route.get("router"),
@@ -152,4 +159,6 @@ def build_orchestrator_preview(
         "router_reason_zh": route.get("reason_zh") or route.get("rule_reason_zh"),
         "plan_planner": plan_planner,
         "trace": trace,
+        "summary_zh": route.get("guidance_zh") if route.get("out_of_scope") else None,
+        "scope_category": route.get("scope_category"),
     }

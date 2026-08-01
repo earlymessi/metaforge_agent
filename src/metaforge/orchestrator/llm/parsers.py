@@ -42,6 +42,20 @@ def parse_router(raw: Dict[str, Any], *, message: str = "") -> Dict[str, Any]:
     intent = str(raw.get("intent") or "schedule").strip().lower()
     if intent == "pipeline":
         intent = "schedule"
+
+    if intent == "unsupported":
+        from metaforge.services.router_scope import build_out_of_scope_route
+
+        steps = raw.get("reasoning_steps")
+        rs = [str(s)[:120] for s in steps[:6]] if isinstance(steps, list) else None
+        return build_out_of_scope_route(
+            str(raw.get("scope_category") or "general").strip(),
+            router="llm",
+            reason_zh=str(raw.get("reason_zh") or "")[:200] or None,
+            guidance_zh=str(raw.get("guidance_zh") or "")[:800] or None,
+            reasoning_steps=rs,
+        )
+
     if intent not in _VALID_INTENTS:
         intent = "schedule"
     out = {

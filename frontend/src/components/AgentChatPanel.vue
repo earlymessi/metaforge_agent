@@ -454,6 +454,8 @@ async function send() {
     else if (data.status === 'pending_confirm') {
       ElMessage.info(data.pending_action?.preview?.has_existing_schedule ? '请确认是否覆盖已有排程' : '请确认是否落库')
       if (data.pending_action) openConfirm(data.pending_action)
+    } else if (data.status === 'out_of_scope') {
+      ElMessage.info('该问题不在六个业务 Agent 范围内，请按下方说明前往对应页面')
     } else if (data.status === 'need_input') {
       ElMessage.info('请按助手提示补充信息后继续发送')
     }

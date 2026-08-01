@@ -18,6 +18,15 @@ _INTENT_HINTS = {
     "commitment": "仅问询/评估当前计划交期能否满足、风险高低、对客户怎么说；用户未要求修改交期或重排",
     "whatif": "两种及以上策略/方案对比选优",
     "plans": "计划库增删改查、加载绑定；不涉及算甘特。完成后除删除/纯列表外应打开排程中心。",
+    "unsupported": "问题超出上述六个 Agent 能力，不进入任何 Agent；须给出 scope_category 与引导",
+}
+
+_SCOPE_CATEGORY_HINTS = {
+    "mes_execution": (
+        "MES 现场执行监控：当前在执行哪张计划/订单、仿真进度、机台实时态、数字孪生现场态等"
+        "→ 引导用户去生产看板 /new-ui/dashboard，不要选 commitment 做交期评估"
+    ),
+    "general": "与车间排产无关的闲聊、百科、或其它页面功能（能耗/物流维护等）→ 说明不在助手范围",
 }
 
 _EVENT_TYPES = (
@@ -204,29 +213,73 @@ _ROUTER_FEW_SHOTS = [
             }
         ),
     ),
+    (
+        "目前的执行情况如何 在进行哪个订单",
+        json_line(
+            {
+                "reasoning_steps": [
+                    "问 MES 现场执行态",
+                    "非排程计算也非交期评估",
+                    "选 unsupported",
+                ],
+                "intent": "unsupported",
+                "scope_category": "mes_execution",
+                "reason_zh": "查询当前 MES 执行中的订单，属生产看板而非交期承诺 Agent",
+            }
+        ),
+    ),
+    (
+        "当前仿真跑到哪了",
+        json_line(
+            {
+                "reasoning_steps": ["MES 仿真进度", "非 Agent 能力", "unsupported"],
+                "intent": "unsupported",
+                "scope_category": "mes_execution",
+                "reason_zh": "仿真进度在生产看板查看",
+            }
+        ),
+    ),
 ]
 
 
 def router_system() -> str:
-    intent_lines = "\n".join(
+    agent_intent_lines = "\n".join(
         f"- {k} → {v}：{_INTENT_HINTS.get(k, '')}" for k, v in INTENT_TO_AGENT.items()
+    )
+    scope_lines = "\n".join(
+        f"- {k}：{v}" for k, v in _SCOPE_CATEGORY_HINTS.items()
     )
     return build_structured_prompt(
         role="你是 MES 的「意图识别 Agent」（Intent Router），负责将用户一句中文映射到唯一 intent。",
-        scope="只输出 JSON；必须结合整句语义，禁止仅凭单字（「计划」「查」「排」）碰运气；不要编造未列出的 intent。",
-        tool_scope=f"intent 必须且只能是下列之一：\n{intent_lines}",
-        business_rules="""判别要点：
+        scope="只输出 JSON；必须结合整句语义理解用户真正要什么，禁止仅凭关键词碰运气。",
+        tool_scope=f"""intent 必须且只能是下列之一（含 unsupported）：
+
+【六个业务 Agent】
+{agent_intent_lines}
+
+【超出能力】
+- unsupported → 无 Agent：用户问题不属于上述任一 Agent，不要硬塞进 commitment/schedule""",
+        business_rules=f"""判别要点：
 - **plans**：计划库 CRUD/加载/绑定（新建计划、删除计划、查看计划XXX），不涉及选求解器、不算甘特。
 - **schedule**：对已有工单排程计算、选算法、出甘特；「对比遗传算法和模拟退火」→ schedule（对比求解器）。
 - **whatif**：对比两种及以上**策略/方案**（如交付优先 vs 吞吐优先），不是对比算法名称。
-- **kitting**：齐套、缺料、物料够不够、能否开工、齐套检查；**「缺料会导致哪些工单延期」** 属 kitting（物料因果），不是 commitment。
-- **commitment**：只问当前排程下交期能否满足、整体交付风险、客户话术；**「哪些工单可能延期」**（无缺料/BOM）→ commitment；**没有**改交期或重排指令。
+- **kitting**：齐套、缺料、物料够不够、能否开工；**「缺料会导致哪些工单延期」** 属 kitting（物料因果），不是 commitment。
+- **commitment**：基于**已有排程结果**评估交期能否满足、交付风险、客户话术；**「哪些工单可能延期」**（无缺料语境）→ commitment。
 - **reschedule**：改交期、插单、故障、改优先级等动态事件并重排。
-- **schedule（落库）**：排程并落库/保存到数据库 → 仍选 **schedule**（智能排程 Agent），不是 plans。""",
+- **schedule（落库）**：排程并落库 → 仍选 schedule，不是 plans。
+- **unsupported**（重要，靠语义判断）：
+  · 问「当前执行情况」「哪个订单/工单/计划正在执行」「仿真进度」「MES 状态」「车间现在在跑什么」→ **不是** commitment（交期评估），应选 unsupported + scope_category=mes_execution。
+  · commitment 评估的是排程**结果**上的交期风险，不是 MES **现场执行监控**。
+  · 闲聊、与排产无关的问题 → unsupported + scope_category=general。
+
+scope_category（仅 intent=unsupported 时必填）：
+{scope_lines}""",
         output_format="""JSON 字段：
 - reasoning_steps：3～5 条简短中文（先写）
-- intent：上表之一
-- reason_zh：一句话中文理由""",
+- intent：schedule | reschedule | kitting | commitment | whatif | plans | unsupported
+- reason_zh：一句话中文理由
+- scope_category：仅 unsupported 时必填（mes_execution | general）
+- guidance_zh：仅 unsupported 时可选，一句简短引导（可省略，系统有默认文案）""",
         few_shots=_ROUTER_FEW_SHOTS,
     )
 
@@ -237,6 +290,7 @@ def router_user(message: str) -> str:
         context_lines=[
             "含「查看计划XXX」且 XXX 为具体名称 → plans。",
             "模糊「生产计划」若指排产计算 → schedule。",
+            "问现场执行/哪个订单在跑 → unsupported（mes_execution），不是 commitment。",
         ],
     )
 
