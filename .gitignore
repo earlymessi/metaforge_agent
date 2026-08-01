@@ -32,3 +32,6 @@ Thumbs.db
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Local Git worktrees
+.worktrees/
