@@ -1,7 +1,7 @@
 # MetaForge 参数化 SchedulingStrategy 设计规范
 
 > 日期：2026-08-03  
-> 状态：待用户审查  
+> 状态：已批准（实现计划见 `docs/superpowers/plans/2026-08-03-parameterized-scheduling-strategy.md`）  
 > 范围：智能排产主线的**第一子项目**——参数化策略 + LLM 生成 + 评价闭环 + 轻量 UI  
 > 依据：[`MetaForge_Intelligent_Scheduling_MultiAgent_Implementation.md`](../../../MetaForge_Intelligent_Scheduling_MultiAgent_Implementation.md) + 2026-08-02/03 头脑风暴确认结论  
 > 非目标：本文件不实现完整 Supervisor 七 Agent、不全面迁移 LangGraph/MCP、不改 APS Solver 搜索内核
