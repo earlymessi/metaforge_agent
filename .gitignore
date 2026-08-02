@@ -35,3 +35,6 @@ Thumbs.db
 
 # Local Git worktrees
 .worktrees/
+
+# Brainstorm / local agent session artifacts
+.superpowers/
