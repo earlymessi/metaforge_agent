@@ -163,3 +163,38 @@ def test_start_from_package_no_recommendation():
                 persist_plan=True,
             )
         )
+
+
+def test_start_from_package_ignores_missing_run_when_body_has_candidates(monkeypatch):
+    import asyncio
+
+    gantt = [{"Job": "A", "Start": 0, "Finish": 2}]
+    orders = _FakeOrdersColl()
+
+    async def fake_start(execution_coll, orders_coll, *, plan_id, solver_id, sim_speed=60.0):
+        return {
+            "status": "running",
+            "plan_id": plan_id,
+            "baseline_solver": solver_id,
+            "baseline_gantt": gantt,
+            "sim_speed": sim_speed,
+        }
+
+    monkeypatch.setattr(
+        "metaforge.services.package_to_execution.start_execution",
+        fake_start,
+    )
+
+    out = asyncio.run(
+        start_from_package(
+            _FakeExecutionColl(),
+            orders,
+            run_id="missing-run-id",
+            package={"recommended_schedule_id": "edd"},
+            candidates=[{"schedule_id": "edd", "solver": "edd", "gantt_data": gantt}],
+            jobs=[{"id": "A"}],
+            persist_plan=True,
+        )
+    )
+    assert out["baseline_gantt"]
+    assert out["baseline_solver"] == "edd"

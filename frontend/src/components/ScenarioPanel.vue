@@ -1,5 +1,12 @@
 <template>
   <div class="scenario-panel">
+    <el-alert
+      type="info"
+      :closable="false"
+      show-icon
+      class="mb"
+      title="运行剧本前请先在上方开始 MES 执行；步骤 event_type 须与现网事件一致（machine_breakdown / insert_order / due_date_change 等）。"
+    />
     <div class="row">
       <el-select
         v-model="selectedPresetId"
@@ -236,6 +243,9 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.mb {
+  margin-bottom: 4px;
 }
 .row {
   display: flex;

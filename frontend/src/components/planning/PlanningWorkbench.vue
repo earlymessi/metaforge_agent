@@ -183,16 +183,30 @@ async function onSendToSim() {
   }
   sendingToSim.value = true
   try {
+    const fromRun = lastRunPayload.value?.candidate_schedules
+    const fromView = packageView.value.candidates
+    const pickWithGantt = (list) =>
+      (Array.isArray(list) ? list : []).filter((c) => Array.isArray(c?.gantt_data) && c.gantt_data.length)
+    const candidates =
+      (pickWithGantt(fromRun).length ? fromRun : null) ||
+      (pickWithGantt(fromView).length ? fromView : null) ||
+      fromRun ||
+      fromView ||
+      []
     const payload = {
       run_id: runId.value || undefined,
       package: lastRunPayload.value?.package || {
         recommended_schedule_id: packageView.value.recommended_schedule_id,
       },
-      candidates: lastRunPayload.value?.candidate_schedules || packageView.value.candidates,
+      candidates,
       jobs: props.jobs,
       persist_plan: true,
       plan_name: 'Package 推荐计划',
       sim_speed: 60,
+    }
+    if (!pickWithGantt(candidates).length && !payload.run_id) {
+      ElMessage.error('推荐方案缺少甘特数据，请重新排产后再送入仿真')
+      return
     }
     await api.post('/api/execution/start_from_package', payload)
     ElMessage.success('已送入执行仿真')

@@ -888,6 +888,13 @@ async def scenarios_run(scenario_id: str, body: Dict = Body(default={})):
     if not base_jobs:
         raise HTTPException(status_code=400, detail="base_jobs required (or start execution first)")
 
+    if exec_doc.get("status") not in ("running", "paused") and not body.get("base_jobs"):
+        # Avoid silently using stale idle snapshot; require active execution unless caller passed jobs.
+        raise HTTPException(
+            status_code=400,
+            detail="请先开始 MES 执行，或在请求体中提供 base_jobs",
+        )
+
     envelope: Dict[str, Any] = {
         "base_jobs": base_jobs,
         "reschedule_options": {

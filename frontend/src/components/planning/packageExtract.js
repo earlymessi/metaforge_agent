@@ -20,10 +20,15 @@ export function extractPackageView(data) {
   const simulated = strategy?.provenance?.simulated_fields
   const simulated_fields = Array.isArray(simulated) ? simulated : []
 
-  const candidates =
-    (Array.isArray(evaluation.candidates) && evaluation.candidates) ||
+  const candidatesFromSchedules =
     (Array.isArray(data?.candidate_schedules) && data.candidate_schedules) ||
     (Array.isArray(pkg.candidate_schedules) && pkg.candidate_schedules) ||
+    null
+  // Prefer schedules with gantt_data; evaluation.ranking/candidates usually lack gantt.
+  const candidates =
+    candidatesFromSchedules ||
+    (Array.isArray(evaluation.candidates) && evaluation.candidates) ||
+    (Array.isArray(evaluation.ranking) && evaluation.ranking) ||
     []
 
   const recommended =

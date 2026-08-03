@@ -88,12 +88,14 @@ async def start_from_package(
         from metaforge.strategy.run_state import get_run
 
         run = get_run(run_id)
-        if not run:
+        if run:
+            if not resolved_package:
+                resolved_package = dict(run.get("package") or {})
+            if resolved_candidates is None:
+                resolved_candidates = run.get("candidate_schedules") or []
+        elif not resolved_package and resolved_candidates is None:
             raise ValueError(f"run not found: {run_id!r}")
-        if not resolved_package:
-            resolved_package = dict(run.get("package") or {})
-        if resolved_candidates is None:
-            resolved_candidates = run.get("candidate_schedules") or []
+        # run 丢失但 body 已带 package/candidates 时继续（进程重启常见）
 
     solver_id, gantt = extract_recommended_gantt(
         package=resolved_package,
