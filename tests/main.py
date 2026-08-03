@@ -2109,9 +2109,18 @@ def _planning_enabled() -> bool:
     return os.getenv("PLANNING_STRATEGY_V1", "1").strip() not in ("0", "false", "False")
 
 
+def _planning_collab_enabled() -> bool:
+    return os.getenv("PLANNING_COLLAB_V1", "1").strip() not in ("0", "false", "False")
+
+
 def _require_planning():
     if not _planning_enabled():
         raise HTTPException(status_code=404, detail="planning strategy v1 disabled")
+
+
+def _require_planning_collab():
+    if not _planning_collab_enabled():
+        raise HTTPException(status_code=404, detail="planning collab v1 disabled")
 
 
 @app.get("/api/planning/strategy/presets")
@@ -2212,6 +2221,47 @@ async def planning_run(body: Dict[str, Any] = Body(...)):
         tools=body.get("tools"),
         allow_simulated=body.get("allow_simulated", True),
     )
+
+
+@app.post("/api/planning/collab/analyze")
+async def planning_collab_analyze(body: Dict[str, Any] = Body(...)):
+    _require_planning_collab()
+    from metaforge.planning_collab.supervisor import run_collab_analyze
+
+    return run_collab_analyze(
+        user_goal=body.get("user_goal") or "",
+        jobs=body.get("jobs") or [],
+        machines=body.get("machines") or [],
+        llm_client=body.get("llm_client"),
+        parallel=bool(body.get("parallel", True)),
+    )
+
+
+@app.post("/api/planning/collab/run")
+async def planning_collab_run(body: Dict[str, Any] = Body(...)):
+    _require_planning_collab()
+    from metaforge.planning_collab.supervisor import run_collab
+
+    return run_collab(
+        user_goal=body.get("user_goal") or "",
+        jobs=body.get("jobs") or [],
+        machines=body.get("machines") or [],
+        skip_strategy_hitl=bool(body.get("skip_strategy_hitl", False)),
+        llm_client=body.get("llm_client"),
+        problem=body.get("problem"),
+        parallel=bool(body.get("parallel", True)),
+    )
+
+
+@app.get("/api/planning/collab/runs/{run_id}")
+async def planning_collab_get_run(run_id: str):
+    _require_planning_collab()
+    from metaforge.planning_collab.supervisor import get_collab_run
+
+    run = get_collab_run(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="collab run not found")
+    return run
 
 
 @app.get("/api/planning/runs/{run_id}")
