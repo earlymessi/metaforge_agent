@@ -188,7 +188,7 @@ flowchart LR
 
 | 顺序 | 领域 | 备注 |
 |------|------|------|
-| 1 | events | 异常重排 R0/R1/R2 |
+| 1 | events | ✅ 已闭环：`EventsCollabBridge` + `events_collab`（旧 Runner 已删） |
 | 2 | kitting | 齐套 |
 | 3 | commitment | 交期承诺 |
 | 4 | whatif | 方案对比 |

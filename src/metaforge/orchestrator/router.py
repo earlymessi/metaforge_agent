@@ -537,7 +537,7 @@ def _planning_collab_enabled() -> bool:
 
 def get_agent(agent_id: str):
     from metaforge.agents.commitment import CommitmentAgentRunner
-    from metaforge.agents.events import EventsAgentRunner
+    from metaforge.agents.events_collab_bridge import EventsCollabBridge
     from metaforge.agents.kitting import KittingAgentRunner
     from metaforge.agents.plans import PlansAgentRunner
     from metaforge.agents.scheduling import SchedulingAgentRunner
@@ -553,7 +553,7 @@ def get_agent(agent_id: str):
         "scheduling": scheduling_cls,
         "commitment": CommitmentAgentRunner,
         "kitting": KittingAgentRunner,
-        "events": EventsAgentRunner,
+        "events": EventsCollabBridge,
         "whatif": WhatifAgentRunner,
         "plans": PlansAgentRunner,
     }

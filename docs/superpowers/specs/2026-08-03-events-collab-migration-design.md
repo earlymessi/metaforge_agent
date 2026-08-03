@@ -1,7 +1,7 @@
 # Events Collab 同构迁移 设计规格
 
-> 状态：已批准（头脑风暴 2026-08-03）  
-> 前置：S1–S4 ✅；本轮为五领域同构迁移 backlog 第 1 项（events）  
+> 状态：**已闭环**（实现 2026-08-03）  
+> 前置：S1–S4 ✅；五领域同构迁移 backlog 第 1 项（events）  
 > 方案：**A — 薄 Bridge + 固定编排**  
 > 实现计划：[`docs/superpowers/plans/2026-08-03-events-collab-migration.md`](../plans/2026-08-03-events-collab-migration.md)  
 

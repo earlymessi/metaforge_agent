@@ -257,7 +257,14 @@ const TracePanel = defineComponent({
   },
   setup(props) {
     const plannerLabel = (p) => {
-      const map = { llm: 'GLM', rule: '规则', rule_fallback: '规则回退', explicit: '手动' }
+      const map = {
+        llm: 'GLM',
+        rule: '规则',
+        rule_fallback: '规则回退',
+        explicit: '手动',
+        events_collab: '固定编排',
+        planning_collab: '协同排产',
+      }
       return map[p] || p || '—'
     }
     return () => {

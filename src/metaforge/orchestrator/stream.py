@@ -168,8 +168,8 @@ async def iter_orchestrator_sse(
             out["router_intent"] = route["intent"]
         if route.get("llm_error"):
             out["router_llm_error"] = route["llm_error"]
-        if plan_planner:
-            out["plan_planner"] = plan_planner
+        # Prefer agent response planner (e.g. events_collab) over preview cache.
+        out["plan_planner"] = out.get("plan_planner") or plan_planner
         reason = route.get("reason_zh") or route.get("rule_reason_zh")
         if reason:
             out["router_reason_zh"] = reason

@@ -2014,7 +2014,7 @@ async def agents_kitting_run(req: AgentRunRequest):
 
 @app.post("/api/agents/events/run")
 async def agents_events_run(req: AgentRunRequest):
-    from metaforge.agents.events import EventsAgentRunner
+    from metaforge.orchestrator.router import get_agent
 
     areq = _agent_request_from_body(req)
     areq.context.setdefault("extras", {})
@@ -2028,7 +2028,7 @@ async def agents_events_run(req: AgentRunRequest):
             areq.context["extras"]["production_execution"] = exec_state
     except Exception:
         pass
-    agent = EventsAgentRunner()
+    agent = get_agent("events")
     out = agent.run(areq).to_dict()
     out["agent_id"] = "events"
     if out.get("status") == "success":
@@ -2594,7 +2594,7 @@ async def llm_status():
     import os
     from metaforge.orchestrator.session import session_store_mode, use_mongo_store
 
-    plan_agents = [x.strip() for x in os.getenv("LLM_PLAN_AGENTS", "scheduling,events").split(",") if x.strip()]
+    plan_agents = [x.strip() for x in os.getenv("LLM_PLAN_AGENTS", "scheduling").split(",") if x.strip()]
     import metaforge.orchestrator.router as router_mod
 
     return {

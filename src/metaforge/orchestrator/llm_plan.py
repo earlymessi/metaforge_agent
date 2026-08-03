@@ -20,7 +20,7 @@ def llm_plan_enabled_for(agent_id: str) -> bool:
         return False
     if os.getenv("LLM_PLAN_ENABLED", "1") != "1":
         return False
-    allowed = os.getenv("LLM_PLAN_AGENTS", "scheduling,events")
+    allowed = os.getenv("LLM_PLAN_AGENTS", "scheduling")
     ids = {x.strip() for x in allowed.split(",") if x.strip()}
     return agent_id in ids
 

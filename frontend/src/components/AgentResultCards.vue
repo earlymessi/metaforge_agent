@@ -54,6 +54,23 @@
         {{ kittingCard.can_start ? '可开工' : '暂不可开工' }}
       </el-tag>
     </el-card>
+
+    <!-- 异常重排 -->
+    <el-card v-if="eventsCard" shadow="never" class="result-card">
+      <template #header>
+        <span>异常重排</span>
+        <el-tag v-if="eventsCard.eventType" type="warning" size="small" style="margin-left: 8px">
+          {{ eventsCard.eventType }}
+        </el-tag>
+        <el-tag v-if="eventsCard.status" size="small" effect="plain" style="margin-left: 6px">
+          {{ eventsCard.status }}
+        </el-tag>
+      </template>
+      <p v-if="eventsCard.summary" class="muted">{{ eventsCard.summary }}</p>
+      <p v-if="eventsCard.stages" class="muted">阶段：{{ eventsCard.stages }}</p>
+      <p v-if="eventsCard.delayHint" class="muted">{{ eventsCard.delayHint }}</p>
+      <p v-else-if="eventsCard.hasImpact" class="muted">已生成影响评估，可在生产看板查看双甘特对比。</p>
+    </el-card>
   </div>
 </template>
 
@@ -65,7 +82,9 @@ const props = defineProps({
   artifacts: { type: Object, default: null },
 })
 
-const visible = computed(() => !!(commitmentCard.value || whatifCard.value || kittingCard.value))
+const visible = computed(
+  () => !!(commitmentCard.value || whatifCard.value || kittingCard.value || eventsCard.value)
+)
 
 const commitmentCard = computed(() => {
   if (props.agentId !== 'commitment') return null
@@ -120,6 +139,30 @@ const kittingCard = computed(() => {
   return {
     recommendation: kr.recommendation_zh || kr.summary_zh || '齐套检查已完成',
     can_start: kr.can_start,
+  }
+})
+
+const eventsCard = computed(() => {
+  if (props.agentId !== 'events') return null
+  const art = props.artifacts || {}
+  const trace = art.events_trace || {}
+  const impact = art.impact_report || art.impact_summary?.impact_report
+  const summary = art.impact_summary?.summary_zh || ''
+  const eventType = trace.event_type || art.event_type || art.event_envelope?.event_type
+  const stages = Array.isArray(trace.stages) ? trace.stages.filter(Boolean).join(' → ') : ''
+  const delays = impact?.delay_details
+  let delayHint = ''
+  if (Array.isArray(delays) && delays.length) {
+    delayHint = `交期影响 ${delays.length} 条`
+  }
+  if (!eventType && !stages && !impact && !summary) return null
+  return {
+    eventType: eventType || '',
+    status: trace.status || '',
+    stages,
+    summary,
+    hasImpact: !!impact,
+    delayHint,
   }
 })
 </script>

@@ -63,6 +63,9 @@ class AgentResponse:
             d["pending_action"] = self.pending_action
         if self.error:
             d["error"] = self.error
+        events_trace = self.artifacts.get("events_trace") if isinstance(self.artifacts, dict) else None
+        if isinstance(events_trace, dict):
+            d["events_trace"] = events_trace
         return d
 
 

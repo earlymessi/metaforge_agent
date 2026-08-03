@@ -82,6 +82,8 @@ AGENT_REGISTRY: List[Dict[str, Any]] = [
 
         "scenario": "A",
 
+        "replaced_by": "events_collab",
+
         "endpoint": "/api/agents/events/run",
 
         "allowed_tools": [

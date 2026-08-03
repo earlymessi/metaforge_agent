@@ -2,9 +2,11 @@
 
 > **面向 AI 代理的工作者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐任务实现此计划。步骤使用复选框（`- [ ]`）语法来跟踪进度。
 
+**状态：已闭环（2026-08-03）**
+
 **目标：** 用薄 `EventsCollabBridge` + `events_collab` 固定编排替换 `EventsAgentRunner` 主路径，保留看板 `/api/events/*` 与 Tool/重排内核不变。
 
-**架构：** Bridge 实现 `BaseAgent.run` → 调用 `events_collab.pipeline.run_events`；pipeline 按固定阶段调用现有 Tools；产出 `events_trace`；Flag `EVENTS_COLLAB_V1` 默认开。验收后删除旧 Runner。
+**架构：** Bridge 实现 `BaseAgent.run` → 调用 `events_collab.pipeline.run_events`；pipeline 按固定阶段调用现有 Tools；产出 `events_trace`。验收后已删除旧 Runner（无 Flag 双跑）。
 
 **技术栈：** Python 3.10+、现有 Tool 注册表、pytest、FastAPI
 

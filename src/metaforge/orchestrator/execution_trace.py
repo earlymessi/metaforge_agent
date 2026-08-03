@@ -138,6 +138,8 @@ def build_plan_trace(
         "llm": "由 GLM 生成 Tool 调用链（白名单校验）",
         "rule": "使用 Agent 内置规则模板",
         "rule_fallback": "GLM 计划失败，回退规则模板",
+        "events_collab": "异常重排固定阶段编排（events_collab）",
+        "planning_collab": "协同排产 Supervisor 编排（planning_collab）",
     }.get(plan_planner, plan_planner)
 
     return {

@@ -14,7 +14,7 @@ def llm_react_enabled_for(agent_id: str) -> bool:
         return False
     if os.getenv("LLM_REACT_ENABLED", "0") != "1":
         return False
-    allowed = os.getenv("LLM_REACT_AGENTS", "scheduling,events")
+    allowed = os.getenv("LLM_REACT_AGENTS", "scheduling")
     ids = {x.strip() for x in allowed.split(",") if x.strip()}
     return agent_id in ids
 

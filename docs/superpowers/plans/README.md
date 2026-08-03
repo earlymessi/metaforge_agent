@@ -6,7 +6,7 @@
 | [2026-08-03-planning-collab-multiagent.md](2026-08-03-planning-collab-multiagent.md) | S2 Planning Collab Multi-Agent（已闭环） |
 | [2026-08-03-planning-frontend-modes.md](2026-08-03-planning-frontend-modes.md) | S3 前端三模式 + Package（已闭环） |
 | [2026-08-03-sim-scenario-compare.md](2026-08-03-sim-scenario-compare.md) | **S4 仿真对接 + 扰动剧本 + 对比（已闭环）** |
-| [2026-08-03-events-collab-migration.md](2026-08-03-events-collab-migration.md) | **Events 同构迁移（待执行）** |
+| [2026-08-03-events-collab-migration.md](2026-08-03-events-collab-migration.md) | **Events 同构迁移（已闭环）** |
 
 历史计划已迁至 **[`../../archive/plans/`](../archive/plans/)**（Phase 0–5 多数已完成）。
 
