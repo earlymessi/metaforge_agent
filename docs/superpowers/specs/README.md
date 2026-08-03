@@ -7,7 +7,9 @@
 | [2026-05-29-llm-scheduling-design.md](2026-05-29-llm-scheduling-design.md) | GLM 排程意图 |
 | [2026-05-29-scheduling-agent-upgrade-design.md](2026-05-29-scheduling-agent-upgrade-design.md) | 排程 Agent 升级 |
 | [2026-07-31-metaforge-agent-harness-platform-design.md](2026-07-31-metaforge-agent-harness-platform-design.md) | Agent Harness 平台化（历史/待审） |
-| [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) | **参数化 SchedulingStrategy（现行待审规格）** |
+| [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) | **参数化 SchedulingStrategy（S1 已闭环）** |
+| [2026-08-03-planning-collab-multiagent-design.md](2026-08-03-planning-collab-multiagent-design.md) | **S2 Planning Collab Multi-Agent（待审）** |
 
 **现行能力与 API** 以 [`../../智能体功能清单.md`](../../智能体功能清单.md) 为准。  
-**下一阶段智能排产改造** 以 [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) 为准。
+**S1** 以 [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) 为准。  
+**S2** 以 [2026-08-03-planning-collab-multiagent-design.md](2026-08-03-planning-collab-multiagent-design.md) 为准。
