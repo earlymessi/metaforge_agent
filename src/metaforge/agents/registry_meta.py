@@ -122,6 +122,8 @@ AGENT_REGISTRY: List[Dict[str, Any]] = [
 
         "scenario": "B",
 
+        "replaced_by": "kitting_collab",
+
         "endpoint": "/api/agents/kitting/run",
 
         "allowed_tools": [
@@ -154,6 +156,8 @@ AGENT_REGISTRY: List[Dict[str, Any]] = [
 
         "scenario": "C",
 
+        "replaced_by": "commitment_collab",
+
         "endpoint": "/api/agents/commitment/run",
 
         "allowed_tools": [
@@ -181,6 +185,8 @@ AGENT_REGISTRY: List[Dict[str, Any]] = [
         "intent": "whatif",
 
         "scenario": "D",
+
+        "replaced_by": "whatif_collab",
 
         "endpoint": "/api/agents/whatif/run",
 
@@ -211,6 +217,8 @@ AGENT_REGISTRY: List[Dict[str, Any]] = [
         "intent": "plans",
 
         "scenario": "F",
+
+        "replaced_by": "plans_collab",
 
         "endpoint": "/api/agents/plans/run",
 

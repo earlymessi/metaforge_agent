@@ -139,6 +139,10 @@ def build_plan_trace(
         "rule": "使用 Agent 内置规则模板",
         "rule_fallback": "GLM 计划失败，回退规则模板",
         "events_collab": "异常重排固定阶段编排（events_collab）",
+        "kitting_collab": "齐套固定阶段编排（kitting_collab）",
+        "commitment_collab": "交期承诺固定阶段编排（commitment_collab）",
+        "whatif_collab": "方案对比固定阶段编排（whatif_collab）",
+        "plans_collab": "计划管理固定阶段编排（plans_collab）",
         "planning_collab": "协同排产 Supervisor 编排（planning_collab）",
     }.get(plan_planner, plan_planner)
 

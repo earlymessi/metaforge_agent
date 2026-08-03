@@ -263,6 +263,10 @@ const TracePanel = defineComponent({
         rule_fallback: '规则回退',
         explicit: '手动',
         events_collab: '固定编排',
+        kitting_collab: '齐套编排',
+        commitment_collab: '交期编排',
+        whatif_collab: '方案对比',
+        plans_collab: '计划管理',
         planning_collab: '协同排产',
       }
       return map[p] || p || '—'

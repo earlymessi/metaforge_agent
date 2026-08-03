@@ -66,6 +66,20 @@ class AgentResponse:
         events_trace = self.artifacts.get("events_trace") if isinstance(self.artifacts, dict) else None
         if isinstance(events_trace, dict):
             d["events_trace"] = events_trace
+        kitting_trace = self.artifacts.get("kitting_trace") if isinstance(self.artifacts, dict) else None
+        if isinstance(kitting_trace, dict):
+            d["kitting_trace"] = kitting_trace
+        commitment_trace = (
+            self.artifacts.get("commitment_trace") if isinstance(self.artifacts, dict) else None
+        )
+        if isinstance(commitment_trace, dict):
+            d["commitment_trace"] = commitment_trace
+        whatif_trace = self.artifacts.get("whatif_trace") if isinstance(self.artifacts, dict) else None
+        if isinstance(whatif_trace, dict):
+            d["whatif_trace"] = whatif_trace
+        plans_trace = self.artifacts.get("plans_trace") if isinstance(self.artifacts, dict) else None
+        if isinstance(plans_trace, dict):
+            d["plans_trace"] = plans_trace
         return d
 
 

@@ -189,10 +189,10 @@ flowchart LR
 | 顺序 | 领域 | 备注 |
 |------|------|------|
 | 1 | events | ✅ 已闭环：`EventsCollabBridge` + `events_collab`（旧 Runner 已删） |
-| 2 | kitting | 齐套 |
-| 3 | commitment | 交期承诺 |
-| 4 | whatif | 方案对比 |
-| 5 | plans | 计划管理 |
+| 2 | kitting | ✅ 已闭环：`KittingCollabBridge` + `kitting_collab`（旧 Runner 已删） |
+| 3 | commitment | ✅ 已闭环：`CommitmentCollabBridge` + `commitment_collab`（旧 Runner 已删） |
+| 4 | whatif | ✅ 已闭环：`WhatifCollabBridge` + `whatif_collab`（旧 Runner 已删） |
+| 5 | plans | ✅ 已闭环：`PlansCollabBridge` + `plans_collab`（旧 Runner 已删） |
 
 ---
 

@@ -1986,15 +1986,15 @@ async def agents_scheduling_run(req: AgentRunRequest):
 
 @app.post("/api/agents/commitment/run")
 async def agents_commitment_run(req: AgentRunRequest):
-    from metaforge.agents.commitment import CommitmentAgentRunner
+    from metaforge.orchestrator.router import get_agent
 
-    agent = CommitmentAgentRunner()
+    agent = get_agent("commitment")
     return agent.run(_agent_request_from_body(req)).to_dict()
 
 
 @app.post("/api/agents/kitting/run")
 async def agents_kitting_run(req: AgentRunRequest):
-    from metaforge.agents.kitting import KittingAgentRunner
+    from metaforge.orchestrator.router import get_agent
 
     areq = _agent_request_from_body(req)
     if req.custom_data and "inventory" not in areq.context.get("extras", {}):
@@ -2008,7 +2008,7 @@ async def agents_kitting_run(req: AgentRunRequest):
                 m["id"]: m.get("name", m["id"]) for m in material_catalog
             }
             areq.context["extras"]["material_catalog"] = material_catalog
-    agent = KittingAgentRunner()
+    agent = get_agent("kitting")
     return agent.run(areq).to_dict()
 
 
@@ -2199,7 +2199,7 @@ async def db_confirm_save(req: ConfirmSaveRequest):
 
 @app.post("/api/agents/whatif/run")
 async def agents_whatif_run(req: AgentRunRequest):
-    from metaforge.agents.whatif import WhatifAgentRunner
+    from metaforge.orchestrator.router import get_agent
 
     areq = _agent_request_from_body(req)
     areq.context.setdefault("extras", {})
@@ -2207,15 +2207,15 @@ async def agents_whatif_run(req: AgentRunRequest):
         areq.context["extras"]["resource_config"] = await _fetch_resource_config()
     except Exception:
         pass
-    agent = WhatifAgentRunner()
+    agent = get_agent("whatif")
     return agent.run(areq).to_dict()
 
 
 @app.post("/api/agents/plans/run")
 async def agents_plans_run(req: AgentRunRequest):
-    from metaforge.agents.plans import PlansAgentRunner
+    from metaforge.orchestrator.router import get_agent
 
-    agent = PlansAgentRunner()
+    agent = get_agent("plans")
     return agent.run(_agent_request_from_body(req)).to_dict()
 
 

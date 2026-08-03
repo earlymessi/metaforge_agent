@@ -536,12 +536,12 @@ def _planning_collab_enabled() -> bool:
 
 
 def get_agent(agent_id: str):
-    from metaforge.agents.commitment import CommitmentAgentRunner
+    from metaforge.agents.commitment_collab_bridge import CommitmentCollabBridge
     from metaforge.agents.events_collab_bridge import EventsCollabBridge
-    from metaforge.agents.kitting import KittingAgentRunner
-    from metaforge.agents.plans import PlansAgentRunner
+    from metaforge.agents.kitting_collab_bridge import KittingCollabBridge
+    from metaforge.agents.plans_collab_bridge import PlansCollabBridge
     from metaforge.agents.scheduling import SchedulingAgentRunner
-    from metaforge.agents.whatif import WhatifAgentRunner
+    from metaforge.agents.whatif_collab_bridge import WhatifCollabBridge
 
     scheduling_cls = SchedulingAgentRunner
     if agent_id == "scheduling" and _planning_collab_enabled():
@@ -551,11 +551,11 @@ def get_agent(agent_id: str):
 
     registry = {
         "scheduling": scheduling_cls,
-        "commitment": CommitmentAgentRunner,
-        "kitting": KittingAgentRunner,
+        "commitment": CommitmentCollabBridge,
+        "kitting": KittingCollabBridge,
         "events": EventsCollabBridge,
-        "whatif": WhatifAgentRunner,
-        "plans": PlansAgentRunner,
+        "whatif": WhatifCollabBridge,
+        "plans": PlansCollabBridge,
     }
     cls = registry.get(agent_id)
     if cls is None:
