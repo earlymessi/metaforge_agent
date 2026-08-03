@@ -10,7 +10,7 @@
 | [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) | **参数化 SchedulingStrategy（S1 已闭环）** |
 | [2026-08-03-planning-collab-multiagent-design.md](2026-08-03-planning-collab-multiagent-design.md) | **S2 Planning Collab Multi-Agent（已闭环）** |
 | [2026-08-03-planning-frontend-modes-design.md](2026-08-03-planning-frontend-modes-design.md) | **S3 前端三模式 + Package 结果页（已闭环）** |
-| [2026-08-03-sim-scenario-compare-design.md](2026-08-03-sim-scenario-compare-design.md) | **S4 仿真对接 + 扰动剧本 + R0/R1/R2 对比（待审）** |
+| [2026-08-03-sim-scenario-compare-design.md](2026-08-03-sim-scenario-compare-design.md) | **S4 仿真对接 + 扰动剧本 + R0/R1/R2 对比（已闭环）** |
 
 **现行能力与 API** 以 [`../../智能体功能清单.md`](../../智能体功能清单.md) 为准。  
 **S1** 以 [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) 为准。  

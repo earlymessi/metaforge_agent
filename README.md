@@ -52,7 +52,7 @@ LLM **不算甘特、不改算法源码**；确定性 APS Solver 负责计算。
 | **S1** | 参数化 `SchedulingStrategy` + 评价闭环 + HITL + `/api/planning/*` + APS 轻量 UI | ✅ **已闭环** |
 | **S2** | Planning Supervisor + Order/Constraint/Resource → S1；替换 scheduling 主路径 | ✅ **已闭环** |
 | **S3** | 前端三模式（模板 / 参数化 / AI 策略）+ 完整结果页 | ✅ **已闭环** |
-| **S4** | 推荐计划对接仿真强化 + 自动扰动 + R0/R1/R2 强化 | ⬜ 未开始 |
+| **S4** | 推荐计划对接仿真强化 + 可配置扰动 + R0/R1/R2 对比页 | ✅ **已闭环** |
 | **暂缓** | 全面 LangGraph / MCP / 真实 MES·IoT / 复杂 RBAC | ⏸ 不做 |
 
 ```mermaid
@@ -65,8 +65,7 @@ gantt
     S1 参数化策略闭环             :done, 2026-08-02, 2026-08-03
     S2 Collab Multi-Agent         :done, 2026-08-03, 2026-08-03
     S3 前端三模式                 :done, 2026-08-03, 2026-08-03
-    section 规划中
-    S4 仿真与动态重排强化         :2026-08-04, 14d
+    S4 仿真与动态重排强化         :done, 2026-08-03, 2026-08-03
 ```
 ---
 
@@ -213,26 +212,26 @@ APS 右侧以 `PlanningWorkbench` Tab 工作台替换旧 NL/权重面板：
 
 ---
 
-## S3 之后（路线图）
+## S4 之后（路线图）
 
 ```mermaid
 flowchart LR
     S1[S1 参数化策略 ✅] --> S2[S2 Collab ✅]
     S2 --> S3[S3 前端三模式 ✅]
-    S3 --> S4[S4 仿真 + 动态重排强化]
+    S3 --> S4[S4 仿真 + 扰动 + 对比 ✅]
 ```
 
-| 下一阶段 | 目标 | 关键产出 |
+| 已完成阶段 | 目标 | 关键产出 |
 |----------|------|----------|
-| **S4** | 执行与异常闭环加强 | 推荐计划→仿真、自动扰动脚本、R0/R1/R2 对比强化 |
+| **S4** | 执行与异常闭环加强 | Package→仿真、可配置扰动剧本、R0/R1/R2 三甘特对比 + JSON/PDF 导出 |
 
 详细规格与决策见：
 
 - [`docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md`](docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md)
 - [`docs/superpowers/specs/2026-08-03-planning-collab-multiagent-design.md`](docs/superpowers/specs/2026-08-03-planning-collab-multiagent-design.md)
 - [`docs/superpowers/specs/2026-08-03-planning-frontend-modes-design.md`](docs/superpowers/specs/2026-08-03-planning-frontend-modes-design.md)
-- [`docs/superpowers/plans/2026-08-03-planning-collab-multiagent.md`](docs/superpowers/plans/2026-08-03-planning-collab-multiagent.md)
-- [`docs/superpowers/plans/2026-08-03-planning-frontend-modes.md`](docs/superpowers/plans/2026-08-03-planning-frontend-modes.md)
+- [`docs/superpowers/specs/2026-08-03-sim-scenario-compare-design.md`](docs/superpowers/specs/2026-08-03-sim-scenario-compare-design.md)
+- [`docs/superpowers/plans/2026-08-03-sim-scenario-compare.md`](docs/superpowers/plans/2026-08-03-sim-scenario-compare.md)
 ---
 
 ## 现有能力一览（基线，已完成）

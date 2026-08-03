@@ -1,9 +1,9 @@
 # S4 仿真对接 + 扰动剧本 + R0/R1/R2 对比强化 设计规格
 
-> 状态：已批准（头脑风暴 2026-08-03）  
+> 状态：**S4 已闭环**（P0 Package→仿真 / P1 扰动剧本 / P2 三甘特对比导出）  
 > 前置：S1/S2/S3 ✅  
 > 交付方式：单规格，**P0 → P1 → P2** 分期实现（各阶段可独立验收）  
-> 实现计划：待 `writing-plans` 产出（可按阶段拆 plan 或一份 plan 分任务块）
+> 实现计划：[`docs/superpowers/plans/2026-08-03-sim-scenario-compare.md`](../plans/2026-08-03-sim-scenario-compare.md)
 
 ---
 

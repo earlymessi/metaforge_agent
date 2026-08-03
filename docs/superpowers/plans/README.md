@@ -2,7 +2,10 @@
 
 | 文件 | 说明 |
 |------|------|
-| [2026-08-03-parameterized-scheduling-strategy.md](2026-08-03-parameterized-scheduling-strategy.md) | **参数化 SchedulingStrategy（现行）** |
+| [2026-08-03-parameterized-scheduling-strategy.md](2026-08-03-parameterized-scheduling-strategy.md) | S1 参数化 SchedulingStrategy（已闭环） |
+| [2026-08-03-planning-collab-multiagent.md](2026-08-03-planning-collab-multiagent.md) | S2 Planning Collab Multi-Agent（已闭环） |
+| [2026-08-03-planning-frontend-modes.md](2026-08-03-planning-frontend-modes.md) | S3 前端三模式 + Package（已闭环） |
+| [2026-08-03-sim-scenario-compare.md](2026-08-03-sim-scenario-compare.md) | **S4 仿真对接 + 扰动剧本 + 对比（已闭环）** |
 
 历史计划已迁至 **[`../../archive/plans/`](../archive/plans/)**（Phase 0–5 多数已完成）。
 
@@ -10,4 +13,4 @@
 
 - [`../../智能体功能清单.md`](../../智能体功能清单.md)
 - [`../../多智能体开发进度.md`](../../多智能体开发进度.md)
-- 规格：[../specs/2026-08-03-parameterized-scheduling-strategy-design.md](../specs/2026-08-03-parameterized-scheduling-strategy-design.md)
+- S4 规格：[../specs/2026-08-03-sim-scenario-compare-design.md](../specs/2026-08-03-sim-scenario-compare-design.md)
