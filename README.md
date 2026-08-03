@@ -2,7 +2,7 @@
 
 MetaForge 是面向 **Job Shop 排产（JSSP）** 的模块化工具包：经典元启发式 + 强化学习求解器，并提供 **FastAPI + MongoDB + Vue3** 车间排产 Web 应用。
 
-当前主分支：**`V1`** — 已完成 **S1 参数化策略** + **S2 Planning Collab Multi-Agent**。
+当前主分支：**`V1`** — 已完成 **S1 参数化策略** + **S2 Planning Collab Multi-Agent** + **S3 前端三模式**。
 
 ---
 
@@ -51,7 +51,7 @@ LLM **不算甘特、不改算法源码**；确定性 APS Solver 负责计算。
 | **基线** | 14 Solver、六大业务 Agent、Tool 白名单、MES 仿真与事件重排、Vue `/new-ui` | ✅ 已完成 |
 | **S1** | 参数化 `SchedulingStrategy` + 评价闭环 + HITL + `/api/planning/*` + APS 轻量 UI | ✅ **已闭环** |
 | **S2** | Planning Supervisor + Order/Constraint/Resource → S1；替换 scheduling 主路径 | ✅ **已闭环** |
-| **S3** | 前端三模式（模板 / 参数化 / AI 策略）+ 完整结果页 | ⬜ 未开始 |
+| **S3** | 前端三模式（模板 / 参数化 / AI 策略）+ 完整结果页 | ✅ **已闭环** |
 | **S4** | 推荐计划对接仿真强化 + 自动扰动 + R0/R1/R2 强化 | ⬜ 未开始 |
 | **暂缓** | 全面 LangGraph / MCP / 真实 MES·IoT / 复杂 RBAC | ⏸ 不做 |
 
@@ -64,11 +64,10 @@ gantt
     基线 MES + 六 Agent           :done, 2026-05-01, 2026-05-31
     S1 参数化策略闭环             :done, 2026-08-02, 2026-08-03
     S2 Collab Multi-Agent         :done, 2026-08-03, 2026-08-03
+    S3 前端三模式                 :done, 2026-08-03, 2026-08-03
     section 规划中
-    S3 前端三模式                 :2026-08-04, 10d
-    S4 仿真与动态重排强化         :2026-08-14, 14d
+    S4 仿真与动态重排强化         :2026-08-04, 14d
 ```
-
 ---
 
 ## S1 架构（当前已落地）
@@ -198,26 +197,42 @@ flowchart LR
 
 ---
 
-## S2 之后（路线图）
+## S3 前端三模式（已落地）
+
+APS 右侧以 `PlanningWorkbench` Tab 工作台替换旧 NL/权重面板：
+
+| 模式 | 入口 | 验收要点 |
+|------|------|----------|
+| **A 模板** | Preset 一键跑 | `preset_id` → `/api/planning/run`；默认可跳过策略 HITL |
+| **B 参数** | 权重 + critical + 约束 | catalog 全量硬/软约束编辑；validate → run；默认 HITL |
+| **C AI** | NL 目标 | `/api/planning/collab/run` + 三分析摘要 + HITL |
+| **结果** | Package 面板 | 推荐 ID、KPI、违规、理由、候选对比、`simulated_fields` |
+| **清理** | APSView | 旧 NL 排程 / 权重主入口已移除 |
+
+详细规格：[`docs/superpowers/specs/2026-08-03-planning-frontend-modes-design.md`](docs/superpowers/specs/2026-08-03-planning-frontend-modes-design.md)
+
+---
+
+## S3 之后（路线图）
 
 ```mermaid
 flowchart LR
     S1[S1 参数化策略 ✅] --> S2[S2 Collab ✅]
-    S2 --> S3[S3 前端三模式]
+    S2 --> S3[S3 前端三模式 ✅]
     S3 --> S4[S4 仿真 + 动态重排强化]
 ```
 
 | 下一阶段 | 目标 | 关键产出 |
 |----------|------|----------|
-| **S3** | 策略配置与结果页产品化 | Mode A/B/C、完整 Production Plan Package 展示 |
 | **S4** | 执行与异常闭环加强 | 推荐计划→仿真、自动扰动脚本、R0/R1/R2 对比强化 |
 
 详细规格与决策见：
 
 - [`docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md`](docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md)
 - [`docs/superpowers/specs/2026-08-03-planning-collab-multiagent-design.md`](docs/superpowers/specs/2026-08-03-planning-collab-multiagent-design.md)
+- [`docs/superpowers/specs/2026-08-03-planning-frontend-modes-design.md`](docs/superpowers/specs/2026-08-03-planning-frontend-modes-design.md)
 - [`docs/superpowers/plans/2026-08-03-planning-collab-multiagent.md`](docs/superpowers/plans/2026-08-03-planning-collab-multiagent.md)
-
+- [`docs/superpowers/plans/2026-08-03-planning-frontend-modes.md`](docs/superpowers/plans/2026-08-03-planning-frontend-modes.md)
 ---
 
 ## 现有能力一览（基线，已完成）
