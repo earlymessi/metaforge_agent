@@ -2105,6 +2105,175 @@ async def agents_pipeline_run_deprecated(req: AgentRunRequest):
     return await agents_scheduling_run(req)
 
 
+def _planning_enabled() -> bool:
+    return os.getenv("PLANNING_STRATEGY_V1", "1").strip() not in ("0", "false", "False")
+
+
+def _require_planning():
+    if not _planning_enabled():
+        raise HTTPException(status_code=404, detail="planning strategy v1 disabled")
+
+
+@app.get("/api/planning/strategy/presets")
+async def planning_strategy_presets():
+    _require_planning()
+    from metaforge.strategy.presets import list_presets
+
+    return {"presets": list_presets()}
+
+
+@app.get("/api/planning/constraints/catalog")
+async def planning_constraints_catalog():
+    _require_planning()
+    from metaforge.strategy.catalog import (
+        HARD_CONSTRAINT_TYPES,
+        SOFT_CONSTRAINT_TYPES,
+        SOFT_FOLDS_INTO,
+        list_constraint_catalog,
+    )
+
+    return {
+        "catalog": list_constraint_catalog(),
+        "hard_types": sorted(HARD_CONSTRAINT_TYPES),
+        "soft_types": sorted(SOFT_CONSTRAINT_TYPES),
+        "soft_folds_into": dict(SOFT_FOLDS_INTO),
+    }
+
+
+@app.post("/api/planning/strategy/generate")
+async def planning_strategy_generate(body: Dict[str, Any] = Body(...)):
+    _require_planning()
+    from metaforge.strategy.generator import generate_strategy
+
+    strategy, meta = generate_strategy(
+        user_goal=body.get("user_goal") or "",
+        jobs=body.get("jobs") or [],
+        machines=body.get("machines") or [],
+        llm_client=body.get("llm_client"),
+        workers=body.get("workers"),
+        tools=body.get("tools"),
+        allow_simulated=body.get("allow_simulated", True),
+    )
+    return {"strategy": strategy.to_dict(), "meta": meta}
+
+
+@app.post("/api/planning/strategy/validate")
+async def planning_strategy_validate(body: Dict[str, Any] = Body(...)):
+    _require_planning()
+    from metaforge.strategy.guardrails import validate_strategy
+    from metaforge.strategy.models import SchedulingStrategy
+
+    raw = body.get("strategy")
+    if not isinstance(raw, dict):
+        raise HTTPException(status_code=400, detail="strategy must be an object")
+    strategy = SchedulingStrategy.from_dict(raw)
+    ok, errors, fixed = validate_strategy(
+        strategy,
+        jobs=body.get("jobs") or [],
+        machines=body.get("machines") or [],
+        workers=body.get("workers"),
+        tools=body.get("tools"),
+        allow_simulated=body.get("allow_simulated", True),
+    )
+    return {"ok": ok, "errors": errors, "strategy": fixed.to_dict()}
+
+
+@app.post("/api/planning/strategy/evaluate")
+async def planning_strategy_evaluate(body: Dict[str, Any] = Body(...)):
+    _require_planning()
+    from metaforge.strategy.evaluator import evaluate_candidates
+    from metaforge.strategy.models import SchedulingStrategy
+
+    raw = body.get("strategy")
+    if not isinstance(raw, dict):
+        raise HTTPException(status_code=400, detail="strategy must be an object")
+    strategy = SchedulingStrategy.from_dict(raw)
+    evaluation = evaluate_candidates(
+        strategy,
+        list(body.get("candidates") or []),
+        jobs=body.get("jobs") or [],
+    )
+    return evaluation
+
+
+@app.post("/api/planning/run")
+async def planning_run(body: Dict[str, Any] = Body(...)):
+    _require_planning()
+    from metaforge.strategy.pipeline import run_planning
+
+    return run_planning(
+        user_goal=body.get("user_goal") or "",
+        jobs=body.get("jobs") or [],
+        machines=body.get("machines") or [],
+        skip_strategy_hitl=bool(body.get("skip_strategy_hitl", False)),
+        llm_client=body.get("llm_client"),
+        problem=body.get("problem"),
+        workers=body.get("workers"),
+        tools=body.get("tools"),
+        allow_simulated=body.get("allow_simulated", True),
+    )
+
+
+@app.get("/api/planning/runs/{run_id}")
+async def planning_get_run(run_id: str):
+    _require_planning()
+    from metaforge.strategy.run_state import get_run
+
+    run = get_run(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="run not found")
+    return run
+
+
+@app.post("/api/planning/runs/{run_id}/strategy/approve")
+async def planning_strategy_approve(run_id: str, body: Dict[str, Any] = Body(default={})):
+    _require_planning()
+    from metaforge.strategy.hitl import approve_strategy
+    from metaforge.strategy.pipeline import resume_planning
+
+    out = approve_strategy(run_id)
+    if out.get("status") == "FAILED":
+        raise HTTPException(status_code=400, detail=out.get("error") or "approve failed")
+    if out.get("status") == "RUNNING":
+        out = resume_planning(run_id, problem=body.get("problem"))
+    return out
+
+
+@app.post("/api/planning/runs/{run_id}/strategy/reject")
+async def planning_strategy_reject(run_id: str, body: Dict[str, Any] = Body(default={})):
+    _require_planning()
+    from metaforge.strategy.hitl import reject_strategy
+
+    return reject_strategy(run_id, reason=body.get("reason") or "")
+
+
+@app.post("/api/planning/runs/{run_id}/strategy/edit_and_approve")
+async def planning_strategy_edit_and_approve(run_id: str, body: Dict[str, Any] = Body(...)):
+    _require_planning()
+    from metaforge.strategy.hitl import edit_and_approve
+    from metaforge.strategy.pipeline import resume_planning
+    from metaforge.strategy.run_state import get_run
+
+    run = get_run(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="run not found")
+    raw = body.get("strategy")
+    if not isinstance(raw, dict):
+        raise HTTPException(status_code=400, detail="strategy must be an object")
+    out = edit_and_approve(
+        run_id,
+        raw,
+        jobs=body.get("jobs") or run.get("jobs") or [],
+        machines=body.get("machines") or run.get("machines") or [],
+        workers=body.get("workers"),
+        tools=body.get("tools"),
+        allow_simulated=body.get("allow_simulated", True),
+    )
+    if out.get("status") == "RUNNING":
+        out = resume_planning(run_id, problem=body.get("problem"))
+    return out
+
+
 @app.post("/api/events/quantity_change")
 async def quantity_change_reschedule(req: QuantityChangeRequest):
     envelope = {

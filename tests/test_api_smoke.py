@@ -163,6 +163,22 @@ def test_multi_agent_routes_registered():
     assert "/api/orchestrator/preview" in paths
 
 
+def test_planning_routes_registered():
+    from main import app
+
+    paths = {getattr(r, "path", "") for r in app.routes}
+    assert "/api/planning/strategy/presets" in paths
+    assert "/api/planning/constraints/catalog" in paths
+    assert "/api/planning/strategy/generate" in paths
+    assert "/api/planning/strategy/validate" in paths
+    assert "/api/planning/strategy/evaluate" in paths
+    assert "/api/planning/run" in paths
+    assert "/api/planning/runs/{run_id}" in paths
+    assert "/api/planning/runs/{run_id}/strategy/approve" in paths
+    assert "/api/planning/runs/{run_id}/strategy/reject" in paths
+    assert "/api/planning/runs/{run_id}/strategy/edit_and_approve" in paths
+
+
 def test_tools_registry_lists_phase2_tools():
     from metaforge.tools.load_all import load_all_tools
     from metaforge.tools.registry import list_tools
