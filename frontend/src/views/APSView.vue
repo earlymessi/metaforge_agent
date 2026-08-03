@@ -357,7 +357,7 @@
         </div>
 
         <div class="planning-panel">
-          <div class="ops-title">参数化策略（V1）</div>
+          <div class="ops-title">协同排产（Collab + 策略 V1）</div>
           <el-form-item label="自然语言目标" label-width="auto" style="margin-bottom: 8px">
             <el-input
               v-model="planningGoal"
@@ -395,6 +395,22 @@
                 :rows="8"
                 class="strategy-json-input"
               />
+            </el-collapse-item>
+          </el-collapse>
+          <el-collapse v-if="collabAnalyses" v-model="collabAnalysisOpen" class="strategy-preview-collapse">
+            <el-collapse-item title="三分析摘要（订单 / 约束 / 资源）" name="analyses">
+              <div v-if="collabAnalyses.order_analysis" class="planning-result-row">
+                <span class="planning-result-k">订单</span>
+                <span>{{ collabAnalyses.order_analysis.summary || formatCriticalOrders(collabAnalyses.order_analysis) }}</span>
+              </div>
+              <div v-if="collabAnalyses.constraint_analysis" class="planning-result-row">
+                <span class="planning-result-k">约束</span>
+                <span>{{ collabAnalyses.constraint_analysis.summary || formatConstraintBrief(collabAnalyses.constraint_analysis) }}</span>
+              </div>
+              <div v-if="collabAnalyses.resource_analysis" class="planning-result-row">
+                <span class="planning-result-k">资源</span>
+                <span>{{ collabAnalyses.resource_analysis.summary || formatResourceBrief(collabAnalyses.resource_analysis) }}</span>
+              </div>
             </el-collapse-item>
           </el-collapse>
           <div v-if="planningRunId && planningRunStatus === 'WAITING_APPROVAL'" class="planning-hitl">
@@ -638,6 +654,8 @@ const planningGenerating = ref(false)
 const planningRunning = ref(false)
 const planningHitlLoading = ref(false)
 const planningResult = ref(null)
+const collabAnalyses = ref(null)
+const collabAnalysisOpen = ref(['analyses'])
 
 const planningJobsDisabled = computed(() => {
   if (inputMode.value === 'custom') return customJobs.value.length === 0
@@ -924,10 +942,36 @@ function extractPlanningResult(data) {
   }
 }
 
+function formatCriticalOrders(orderAnalysis) {
+  const ids = orderAnalysis?.critical_orders || []
+  return ids.length ? `关键订单：${ids.join('、')}` : '无关键订单'
+}
+
+function formatConstraintBrief(constraintAnalysis) {
+  const hard = (constraintAnalysis?.hard_constraints || []).map((c) => c.type).filter(Boolean)
+  const soft = (constraintAnalysis?.soft_constraints || []).map((c) => c.type).filter(Boolean)
+  const parts = []
+  if (hard.length) parts.push(`硬：${hard.join(',')}`)
+  if (soft.length) parts.push(`软：${soft.join(',')}`)
+  return parts.join('；') || '无约束候选'
+}
+
+function formatResourceBrief(resourceAnalysis) {
+  const bn = resourceAnalysis?.bottleneck_machines || []
+  return bn.length ? `瓶颈设备：${bn.join('、')}` : '无瓶颈标记'
+}
+
 function handlePlanningRunResponse(data) {
   if (!data) return
   planningRunId.value = data.run_id || planningRunId.value
   planningRunStatus.value = data.status || ''
+  if (data.artifacts) {
+    collabAnalyses.value = {
+      order_analysis: data.artifacts.order_analysis || null,
+      constraint_analysis: data.artifacts.constraint_analysis || null,
+      resource_analysis: data.artifacts.resource_analysis || null,
+    }
+  }
   if (data.strategy_draft) {
     strategyDraftJson.value = JSON.stringify(data.strategy_draft, null, 2)
   }
@@ -950,7 +994,7 @@ async function ensurePlanningRun() {
   if (!goal) throw new Error('请先输入自然语言目标')
   const jobs = buildPlanningJobs()
   if (!jobs.length) throw new Error('请先配置工单数据（自定义模式）')
-  const { data } = await api.post('/api/planning/run', {
+  const { data } = await api.post('/api/planning/collab/run', {
     user_goal: goal,
     jobs,
     machines: buildPlanningMachines(),
@@ -996,8 +1040,9 @@ async function runSmartPlanning() {
   if (!customJobs.value.length) return ElMessage.warning('请先添加工单')
   planningRunning.value = true
   planningResult.value = null
+  collabAnalyses.value = null
   try {
-    const { data } = await api.post('/api/planning/run', {
+    const { data } = await api.post('/api/planning/collab/run', {
       user_goal: goal,
       jobs: buildPlanningJobs(),
       machines: buildPlanningMachines(),
