@@ -12,6 +12,26 @@ _DUE_RISK_WINDOW = 20
 # Jobs with priority at or above this get a priority adjustment boost.
 _HIGH_PRIORITY = 5
 
+# Short order/customer id: letters, digits, underscore (no Chinese suffixes).
+_ID_TOKEN = r"[A-Za-z0-9_]+"
+# Clip accidental Chinese suffixes when a broader capture is used.
+_KEY_TERMINATORS = ("按期", "交付", "完成")
+
+
+def _clip_key(raw: str) -> str:
+    """Normalize a captured key: strip fillers and truncate at terminators."""
+    token = (raw or "").strip()
+    for prefix in ("保证", "客户"):
+        if token.startswith(prefix):
+            token = token[len(prefix) :].strip()
+    for term in _KEY_TERMINATORS:
+        idx = token.find(term)
+        if idx >= 0:
+            token = token[:idx].strip()
+    if token in {"保证", "客户", "优先"}:
+        return ""
+    return token
+
 
 def _goal_critical_keys(user_goal: str) -> Set[str]:
     """Extract customer / order keys mentioned in the user goal."""
@@ -20,18 +40,15 @@ def _goal_critical_keys(user_goal: str) -> Set[str]:
         return keys
 
     for m in re.finditer(r"保证(?:客户)?(.+?)按期", user_goal):
-        keys.add(m.group(1).strip())
+        keys.add(_clip_key(m.group(1)))
 
-    for m in re.finditer(r"客户([A-Za-z0-9_\u4e00-\u9fff]+)", user_goal):
-        keys.add(m.group(1).strip())
+    for m in re.finditer(rf"客户({_ID_TOKEN})", user_goal):
+        keys.add(_clip_key(m.group(1)))
 
-    for m in re.finditer(r"优先(?:保证)?(?:客户)?([A-Za-z0-9_\u4e00-\u9fff]+)", user_goal):
-        token = m.group(1).strip()
-        if token and token != "保证":
-            keys.add(token)
+    for m in re.finditer(rf"优先(?:保证)?(?:客户)?({_ID_TOKEN})", user_goal):
+        keys.add(_clip_key(m.group(1)))
 
     return {k for k in keys if k}
-
 
 def _job_matches_key(job: Dict[str, Any], keys: Set[str]) -> bool:
     job_id = str(job.get("job_id") or "")

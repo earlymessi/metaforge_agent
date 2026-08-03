@@ -2,6 +2,13 @@ from metaforge.planning_collab.agents.order import run_order_agent
 from metaforge.planning_collab.protocol import AgentTask
 
 
+def _jobs_ab():
+    return [
+        {"job_id": "A", "customer": "A", "due_date": 10, "priority": 5},
+        {"job_id": "B", "due_date": 100, "priority": 1},
+    ]
+
+
 def test_order_agent_marks_critical_from_goal():
     task = AgentTask(
         task_id="1",
@@ -9,11 +16,32 @@ def test_order_agent_marks_critical_from_goal():
         objective="分析",
         inputs={
             "user_goal": "优先保证客户A按期",
-            "jobs": [
-                {"job_id": "A", "customer": "A", "due_date": 10, "priority": 5},
-                {"job_id": "B", "due_date": 100, "priority": 1},
-            ],
+            "jobs": _jobs_ab(),
         },
+    )
+    result = run_order_agent(task)
+    assert result.status == "success"
+    assert "A" in result.artifacts["critical_orders"]
+
+
+def test_order_agent_marks_critical_from_优先A按期():
+    task = AgentTask(
+        task_id="1b",
+        agent_id="order",
+        objective="分析",
+        inputs={"user_goal": "优先A按期", "jobs": _jobs_ab()},
+    )
+    result = run_order_agent(task)
+    assert result.status == "success"
+    assert "A" in result.artifacts["critical_orders"]
+
+
+def test_order_agent_marks_critical_from_客户A按期完成():
+    task = AgentTask(
+        task_id="1c",
+        agent_id="order",
+        objective="分析",
+        inputs={"user_goal": "客户A按期完成", "jobs": _jobs_ab()},
     )
     result = run_order_agent(task)
     assert result.status == "success"
