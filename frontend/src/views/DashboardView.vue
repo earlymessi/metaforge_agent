@@ -214,6 +214,17 @@
       />
     </el-card>
 
+    <el-card shadow="never" class="mt">
+      <template #header>
+        <div class="row">
+          <div class="h">扰动剧本</div>
+          <div class="spacer" />
+          <el-tag type="info" effect="plain">可配置 JSON · 一键运行</el-tag>
+        </div>
+      </template>
+      <ScenarioPanel @ran="onScenarioRan" />
+    </el-card>
+
   </div>
 </template>
 
@@ -223,6 +234,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { api } from '../api/client'
 import MesReschedulePanel from '../components/MesReschedulePanel.vue'
+import ScenarioPanel from '../components/ScenarioPanel.vue'
 import ExecutionGanttChart from '../components/ExecutionGanttChart.vue'
 import DigitalTwinPanel from '../components/DigitalTwinPanel.vue'
 import { useResultsStore } from '../stores/useResultsStore'
@@ -538,6 +550,13 @@ function onRescheduled(resultBundle) {
     store.setResults(resultBundle.results)
   }
   const impact = resultBundle?.impact_report
+  if (impact) {
+    try {
+      sessionStorage.setItem('metaforge_last_impact', JSON.stringify(impact))
+    } catch {
+      /* ignore quota */
+    }
+  }
   const sid =
     impact?.rescheduled_solver ||
     execution.value.baseline_solver ||
@@ -567,6 +586,13 @@ function onRescheduled(resultBundle) {
     )
   }
   fetchTwinAuxiliary()
+}
+
+function onScenarioRan(data) {
+  if (data?.impact) {
+    onRescheduled({ impact_report: data.impact })
+  }
+  refreshAll()
 }
 
 async function pauseExecution() {
