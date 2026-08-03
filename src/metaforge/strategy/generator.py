@@ -186,6 +186,21 @@ def generate_strategy(
         meta.setdefault("fallback", False)
         meta["generated_by"] = "llm"
 
+        llm_ok, llm_errors, _ = validate_strategy(
+            strategy,
+            jobs=jobs,
+            machines=machines,
+            workers=workers,
+            tools=tools,
+            allow_simulated=allow_simulated,
+        )
+        if not llm_ok:
+            meta["llm_validation_failed"] = True
+            meta["validation_errors"] = llm_errors
+            strategy = _build_rule_fallback_strategy(user_goal=user_goal, jobs=jobs)
+            meta["fallback"] = True
+            meta["generated_by"] = "rule_fallback"
+
     ok, errors, fixed = validate_strategy(
         strategy,
         jobs=jobs,
@@ -195,7 +210,7 @@ def generate_strategy(
         allow_simulated=allow_simulated,
     )
     meta["validation_ok"] = ok
-    if errors:
+    if errors and not meta.get("llm_validation_failed"):
         meta["validation_errors"] = errors
 
     return deepcopy(fixed), meta
