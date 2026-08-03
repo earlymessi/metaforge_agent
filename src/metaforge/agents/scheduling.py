@@ -1,4 +1,9 @@
-"""scheduling 业务 Agent — 智能排程（含排程落库 / HITL）。
+"""scheduling 业务 Agent — 遗留智能排程路径（Flag 回退用）。
+
+.. deprecated::
+    默认主路径已由 ``SchedulingCollabBridge`` + ``metaforge.planning_collab`` 接管
+    （``PLANNING_COLLAB_V1=1``，见 ``orchestrator.router.get_agent``）。
+    仅当 ``PLANNING_COLLAB_V1=0`` 时仍加载本 Runner。
 
 Plan 主路径：GLM ``plan`` prompt（``LLM_PLAN_ENABLED=1``）。
 ``build_rule_plan`` 为离线 fallback：调用 ``resolve_schedule_intent`` 得结构化 intent，
