@@ -2,7 +2,7 @@
 
 MetaForge 是面向 **Job Shop 排产（JSSP）** 的模块化工具包：经典元启发式 + 强化学习求解器，并提供 **FastAPI + MongoDB + Vue3** 车间排产 Web 应用。
 
-当前主分支：**`V1`** — 已完成 **Planning Strategy S1（参数化智能排产）闭环**。
+当前主分支：**`V1`** — 已完成 **S1 参数化策略** + **S2 Planning Collab Multi-Agent**。
 
 ---
 
@@ -50,7 +50,7 @@ LLM **不算甘特、不改算法源码**；确定性 APS Solver 负责计算。
 |------|------|------|
 | **基线** | 14 Solver、六大业务 Agent、Tool 白名单、MES 仿真与事件重排、Vue `/new-ui` | ✅ 已完成 |
 | **S1** | 参数化 `SchedulingStrategy` + 评价闭环 + HITL + `/api/planning/*` + APS 轻量 UI | ✅ **已闭环** |
-| **S2** | Planning Supervisor + Order/Constraint/Resource 协作 Multi-Agent | ⬜ 未开始 |
+| **S2** | Planning Supervisor + Order/Constraint/Resource → S1；替换 scheduling 主路径 | ✅ **已闭环** |
 | **S3** | 前端三模式（模板 / 参数化 / AI 策略）+ 完整结果页 | ⬜ 未开始 |
 | **S4** | 推荐计划对接仿真强化 + 自动扰动 + R0/R1/R2 强化 | ⬜ 未开始 |
 | **暂缓** | 全面 LangGraph / MCP / 真实 MES·IoT / 复杂 RBAC | ⏸ 不做 |
@@ -63,10 +63,10 @@ gantt
     section 已完成
     基线 MES + 六 Agent           :done, 2026-05-01, 2026-05-31
     S1 参数化策略闭环             :done, 2026-08-02, 2026-08-03
+    S2 Collab Multi-Agent         :done, 2026-08-03, 2026-08-03
     section 规划中
-    S2 Multi-Agent 协作           :2026-08-04, 14d
-    S3 前端三模式                 :2026-08-18, 10d
-    S4 仿真与动态重排强化         :2026-08-28, 14d
+    S3 前端三模式                 :2026-08-04, 10d
+    S4 仿真与动态重排强化         :2026-08-14, 14d
 ```
 
 ---
@@ -158,25 +158,62 @@ flowchart TB
 
 ---
 
-## S1 之后（路线图）
+## S2 架构（Collab Multi-Agent，已落地）
 
 ```mermaid
 flowchart LR
-    S1[S1 参数化策略 ✅] --> S2[S2 Supervisor Multi-Agent]
+    UI[APS / Orchestrator] --> COL["/api/planning/collab/*"]
+    COL --> SUP[Supervisor]
+    SUP --> O[Order]
+    SUP --> C[Constraint]
+    SUP --> R[Resource]
+    O --> ART[artifacts]
+    C --> ART
+    R --> ART
+    ART --> S1[S1 generate_strategy + pipeline]
+    S1 --> PKG[Production Plan Package]
+```
+
+**验收要点**
+
+- [x] `metaforge.planning_collab`：协议 / 三分析规则 Agent / 可选 LLM 摘要 / Supervisor
+- [x] `/api/planning/collab/{analyze,run,runs/{id}}`，Flag `PLANNING_COLLAB_V1`（默认开）
+- [x] Orchestrator `scheduling` → `SchedulingCollabBridge`（Flag=0 回退旧 Runner）
+- [x] APS「智能排产运行」改调 collab；HITL 仍走 S1 `/api/planning/runs/...`
+- [x] 分析 artifacts 合并入 Strategy（critical / hard / soft）
+- [x] 测试：`tests/planning_collab/` + strategy / router 回归
+
+### 同构迁移 Backlog（S2 不做，后续替换即删旧路径）
+
+| 顺序 | 领域 | 备注 |
+|------|------|------|
+| 1 | events | 异常重排 R0/R1/R2 |
+| 2 | kitting | 齐套 |
+| 3 | commitment | 交期承诺 |
+| 4 | whatif | 方案对比 |
+| 5 | plans | 计划管理 |
+
+---
+
+## S2 之后（路线图）
+
+```mermaid
+flowchart LR
+    S1[S1 参数化策略 ✅] --> S2[S2 Collab ✅]
     S2 --> S3[S3 前端三模式]
     S3 --> S4[S4 仿真 + 动态重排强化]
 ```
 
 | 下一阶段 | 目标 | 关键产出 |
 |----------|------|----------|
-| **S2** | 多 Agent 协作分析再生成策略 | `PlanningSupervisor`、Order/Constraint/Resource Agent、`AgentTask`/`AgentResult` |
 | **S3** | 策略配置与结果页产品化 | Mode A/B/C、完整 Production Plan Package 展示 |
 | **S4** | 执行与异常闭环加强 | 推荐计划→仿真、自动扰动脚本、R0/R1/R2 对比强化 |
 
 详细规格与决策见：
 
 - [`docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md`](docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md)
-- [`MetaForge_Intelligent_Scheduling_MultiAgent_Implementation.md`](MetaForge_Intelligent_Scheduling_MultiAgent_Implementation.md)（全量愿景原文）
+- [`docs/superpowers/specs/2026-08-03-planning-collab-multiagent-design.md`](docs/superpowers/specs/2026-08-03-planning-collab-multiagent-design.md)
+- [`docs/superpowers/plans/2026-08-03-planning-collab-multiagent.md`](docs/superpowers/plans/2026-08-03-planning-collab-multiagent.md)
 
 ---
 
