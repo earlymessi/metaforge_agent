@@ -1,21 +1,12 @@
-# 🔧 MetaForge
+# MetaForge
 
-MetaForge is a modular Python toolkit for solving **Job Shop Scheduling Problems (JSSP)** using classic **metaheuristics** and modern **reinforcement learning** methods.
+MetaForge 是面向 **Job Shop 排产（JSSP）** 的模块化工具包：经典元启发式 + 强化学习求解器，并提供 **FastAPI + MongoDB + Vue3** 车间排产 Web 应用。
 
-🚀 From Tabu Search and Genetic Algorithms to Deep Q-Networks (DQN) and Neuroevolution — MetaForge brings together the best of optimization and AI in one clean, extensible framework.
+当前主分支：**`V1`** — 已完成 **Planning Strategy S1（参数化智能排产）闭环**。
 
 ---
 
-## 🏭 MES 排产系统（本仓库交付形态）
-
-本仓库除算法库外，还提供 **FastAPI + MongoDB + Vue3** 的车间排产 Web 应用：
-
-- **运行手册**：见 [`star.md`](star.md)（MongoDB 启动、后端、前端构建）
-- **新前端**：构建后访问 **`http://127.0.0.1:8008/new-ui/`**（唯一端口，见 `scripts/restart_backend.ps1`）（根路径 `/` 亦可）
-- **改进路线图**：见 [`docs/改进计划.md`](docs/改进计划.md)
-- **多智能体**：见 [`docs/智能体功能清单.md`](docs/智能体功能清单.md)（六大 Agent 主参考）、[`docs/多智能体开发进度.md`](docs/多智能体开发进度.md)、[`docs/README.md`](docs/README.md)
-
-快速启动（Windows PowerShell）：
+## 快速启动（Windows）
 
 ```powershell
 Start-Service MongoDB
@@ -24,138 +15,224 @@ cd frontend; npm install; npm run build; cd ..
 cd tests; python main.py
 ```
 
----
-
-## 🎯 Key Features
-
-- ✅ Solve classic benchmark problems (OR-Library, JSON)
-- 🧠 Built-in solvers:
-  - Tabu Search (TS)
-  - Simulated Annealing (SA)
-  - Genetic Algorithm (GA)
-  - Ant Colony Optimization (ACO)
-  - Q-Learning
-  - DQN (with and without replay buffer)
-  - Neuroevolution
-- 📊 Beautiful convergence and Gantt chart visualizations
-- 🤖 Reinforcement Learning support out-of-the-box
-- 🧪 Designed for research, education, and real-world production scheduling
+- 交付入口：`http://127.0.0.1:8000/new-ui/`
+- 运行手册：[`star.md`](star.md)
+- 设计规格：[参数化 SchedulingStrategy](docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md)
+- 实现计划：[S1 Implementation Plan](docs/superpowers/plans/2026-08-03-parameterized-scheduling-strategy.md)
+- 进度文档：[`docs/多智能体开发进度.md`](docs/多智能体开发进度.md)
 
 ---
 
-## 📦 Installation
+## V1 改造总览：产品主线
 
-From PyPI:
+系统主线固定为：**先排好计划 → 再执行计划 → 最后处理异常**。
 
-```bash
-pip install metaforge
+```mermaid
+flowchart TD
+    A[生产数据配置] --> B[智能排产 / Multi-Agent]
+    B --> C[推荐生产计划]
+    C --> D[人工确认 HITL]
+    D --> E[Production Execution Simulator]
+    E --> F[生产看板倍速执行]
+    F --> G[动态事件 / 执行偏差]
+    G --> H[分析与重调度]
+    H --> I[R0 原计划 / R1 不干预 / R2 智能重排]
+    I --> D
 ```
 
-From GitHub (latest):
+LLM **不算甘特、不改算法源码**；确定性 APS Solver 负责计算。
 
-```bash
-pip install git+https://github.com/Mageed-Ghaleb/MetaForge.git
+---
+
+## 改造计划与完成阶段
+
+| 阶段 | 内容 | 状态 |
+|------|------|------|
+| **基线** | 14 Solver、六大业务 Agent、Tool 白名单、MES 仿真与事件重排、Vue `/new-ui` | ✅ 已完成 |
+| **S1** | 参数化 `SchedulingStrategy` + 评价闭环 + HITL + `/api/planning/*` + APS 轻量 UI | ✅ **已闭环** |
+| **S2** | Planning Supervisor + Order/Constraint/Resource 协作 Multi-Agent | ⬜ 未开始 |
+| **S3** | 前端三模式（模板 / 参数化 / AI 策略）+ 完整结果页 | ⬜ 未开始 |
+| **S4** | 推荐计划对接仿真强化 + 自动扰动 + R0/R1/R2 强化 | ⬜ 未开始 |
+| **暂缓** | 全面 LangGraph / MCP / 真实 MES·IoT / 复杂 RBAC | ⏸ 不做 |
+
+```mermaid
+gantt
+    title MetaForge V1 演进路线（示意）
+    dateFormat  YYYY-MM-DD
+    axisFormat  %m-%d
+    section 已完成
+    基线 MES + 六 Agent           :done, 2026-05-01, 2026-05-31
+    S1 参数化策略闭环             :done, 2026-08-02, 2026-08-03
+    section 规划中
+    S2 Multi-Agent 协作           :2026-08-04, 14d
+    S3 前端三模式                 :2026-08-18, 10d
+    S4 仿真与动态重排强化         :2026-08-28, 14d
 ```
 
 ---
 
-## 📁 Quick Start
+## S1 架构（当前已落地）
+
+### 端到端数据流
+
+```mermaid
+flowchart LR
+    UI[APS 轻量 UI] --> API["/api/planning/*"]
+    API --> GEN[Strategy Generator<br/>LLM + 规则回退]
+    GEN --> HITL{策略 HITL}
+    HITL -->|approve / edit| POL[SolverPolicy]
+    HITL -->|reject| X[CANCELLED]
+    POL --> SOL[APS Solvers<br/>primary + fallback]
+    SOL --> EV[Evaluator<br/>硬淘汰 / 软打分]
+    EV --> PKG[Production Plan Package]
+    PKG --> UI
+```
+
+### 模块分层
+
+```mermaid
+flowchart TB
+    subgraph Frontend
+        APS[APSView 参数化策略面板]
+    end
+    subgraph API
+        PAPI["/api/planning/*"]
+        AGENTS["/api/agents/* 旧路径并存"]
+    end
+    subgraph Strategy["metaforge.strategy ✅"]
+        M[models / presets / catalog]
+        C[context_builder]
+        G[generator + guardrails]
+        A[adapters + solver_policy]
+        R[problem_resolve]
+        E[evaluator]
+        H[hitl + run_state]
+        PL[pipeline + trace]
+    end
+    subgraph Domain["既有能力复用 ✅"]
+        S[14 Solvers / compare_solvers]
+        T[Tool Registry]
+        SES[Session / SSE / 落库 HITL]
+        SIM[Production Simulator / R0R1R2]
+    end
+    APS --> PAPI
+    APS --> AGENTS
+    PAPI --> Strategy
+    PL --> S
+    G --> T
+    PL --> SES
+```
+
+### S1 验收清单（打勾）
+
+**策略与评价**
+
+- [x] `SchedulingStrategy` 统一模型（objectives / hard / soft / critical_orders …）
+- [x] 6 模板降级为 Preset，兼容旧 weights
+- [x] 硬/软约束扩展集 + 模拟数据标记 `simulated_fields`
+- [x] Context Builder（禁止全量 BOM/甘特入 Prompt）
+- [x] NL → Strategy：LLM + repair/retry + 规则回退
+- [x] Guardrails：约束白名单与实体校验
+- [x] Adapters：Strategy → weights / resource hints
+- [x] 轻量 SolverPolicy + Capability Matrix（RL 不假装支持动态多目标）
+- [x] Evaluator：硬约束淘汰 + 软约束去双计打分
+- [x] jobs → `JobShopProblem` 自动构建（HITL 批准可不传 problem）
+- [x] `fallback_solver`：primary 全失败时回退
+
+**运行与接口**
+
+- [x] PlanningRun 状态机（含 `WAITING_APPROVAL`）
+- [x] 策略 HITL：approve / reject / edit_and_approve
+- [x] `/api/planning/*` + Feature Flag `PLANNING_STRATEGY_V1`
+- [x] Planning Tools：`planning.strategy_*` / `planning.run`
+- [x] Strategy Trace 写入 run 响应
+- [x] APS 轻量 UI（目标输入 / JSON 预览 / HITL / 结果）
+- [x] 黄金与 e2e 测试（`tests/strategy/`，当前 43+ 项相关用例通过）
+
+**明确不做（S1）**
+
+- [ ] ~~LLM 改求解器源码~~（禁止）
+- [ ] ~~七 Agent Supervisor~~ → **S2**
+- [ ] ~~完整前端三模式~~ → **S3**
+- [ ] ~~LangGraph / 全面 MCP~~ → 暂缓
+
+---
+
+## S1 之后（路线图）
+
+```mermaid
+flowchart LR
+    S1[S1 参数化策略 ✅] --> S2[S2 Supervisor Multi-Agent]
+    S2 --> S3[S3 前端三模式]
+    S3 --> S4[S4 仿真 + 动态重排强化]
+```
+
+| 下一阶段 | 目标 | 关键产出 |
+|----------|------|----------|
+| **S2** | 多 Agent 协作分析再生成策略 | `PlanningSupervisor`、Order/Constraint/Resource Agent、`AgentTask`/`AgentResult` |
+| **S3** | 策略配置与结果页产品化 | Mode A/B/C、完整 Production Plan Package 展示 |
+| **S4** | 执行与异常闭环加强 | 推荐计划→仿真、自动扰动脚本、R0/R1/R2 对比强化 |
+
+详细规格与决策见：
+
+- [`docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md`](docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md)
+- [`MetaForge_Intelligent_Scheduling_MultiAgent_Implementation.md`](MetaForge_Intelligent_Scheduling_MultiAgent_Implementation.md)（全量愿景原文）
+
+---
+
+## 现有能力一览（基线，已完成）
+
+| 能力 | 说明 |
+|------|------|
+| 14 类求解器 | 规则 / 元启发式 / RL（TS、GA、SA、ACO、EDD…、Q/DQN/PPO…） |
+| 六大业务 Agent | scheduling / events / kitting / commitment / whatif / plans |
+| Tool 白名单 | `GET /api/tools/registry` |
+| MES 执行仿真 | 倍速看板、插单/故障/改交期、R0/R1/R2 |
+| 智能助手 | Orchestrator + SSE + 落库 HITL |
+
+---
+
+## 算法库（Python Toolkit）
+
+仍可作为独立 JSSP 求解库使用：
 
 ```python
 from metaforge.problems.benchmark_loader import load_job_shop_instance
 from metaforge.metaforge_runner import run_solver
 
-# Load a benchmark from URL
-url = "https://raw.githubusercontent.com/Mageed-Ghaleb/MetaForge/main/data/benchmarks/ft06.txt"
-problem = load_job_shop_instance(url)
-
-# Run a solver
+problem = load_job_shop_instance("data/benchmarks/ft06.txt")
 result = run_solver("ts", problem)
-
-# View makespan
 print("Best Makespan:", result["makespan"])
 ```
 
----
-
-## 📊 Visualizations
-
-```python
-from metaforge.utils.visualization import plot_gantt_chart
-schedule = result["schedules"][-1]
-plot_gantt_chart(schedule, num_machines=problem.num_machines, num_jobs=len(problem.jobs))
+```bash
+pip install metaforge
+# 或开发安装
+pip install -e .
 ```
 
----
-
-## 📓 Notebooks
-
-| Name | Description | Launch |
-|------|-------------|--------|
-| MetaForge_Quick_Start.ipynb | Light demo: install, run, visualize | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Mageed-Ghaleb/MetaForge/blob/main/notebooks/MetaForge_Quick_Start.ipynb) |
-| MetaForge_Complete_Testing.ipynb | Full testing suite across all solvers | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Mageed-Ghaleb/MetaForge/blob/main/notebooks/MetaForge_Complete_Testing.ipynb) |
+更多：[`docs/usage.md`](docs/usage.md) · [`docs/solvers.md`](docs/solvers.md) · [`docs/datasets.md`](docs/datasets.md)
 
 ---
 
-## 📚 Documentation
+## 文档索引
 
-- 📖 [Usage Guide](https://github.com/Mageed-Ghaleb/MetaForge/blob/main/docs/usage.md)
-- 🧠 [Solvers Overview](https://github.com/Mageed-Ghaleb/MetaForge/blob/main/docs/solvers.md)
-- 🧠 [Solvers In Details](https://github.com/Mageed-Ghaleb/MetaForge/tree/main/docs/solvers)
-- 📂 [Benchmark Format](https://github.com/Mageed-Ghaleb/MetaForge/blob/main/docs/datasets.md)
-
----
-
-## 🧠 Why MetaForge?
-
-Most libraries focus on one type of solver. MetaForge unifies traditional algorithms and deep reinforcement learning into one clean package. Whether you’re teaching, publishing, or scheduling in a factory — MetaForge is your launchpad. 🚀
-
----
-
-## 🔧 Benchmarks Supported
-
-- FT06, FT10, FT20 (OR-Library)
-- LA01–LA05
-- JSON format coming soon
+| 文档 | 用途 |
+|------|------|
+| [`star.md`](star.md) | 本机启动 |
+| [`docs/智能体功能清单.md`](docs/智能体功能清单.md) | 六 Agent 能力主参考 |
+| [`docs/多智能体开发进度.md`](docs/多智能体开发进度.md) | 进度与已知限制 |
+| [`docs/改进计划.md`](docs/改进计划.md) | 历史改进目标 |
+| [`docs/软件说明书.md`](docs/软件说明书.md) | 软件说明 |
+| [`docs/superpowers/specs/`](docs/superpowers/specs/) | 设计规格 |
+| [`docs/superpowers/plans/`](docs/superpowers/plans/) | 实现计划 |
 
 ---
 
-## 📈 Contributing
-
-We're just getting started! Feel free to:
-
-- Suggest solvers or enhancements
-- Fork and extend
-- Submit PRs — code, docs, notebooks, anything
-
----
-
-## 📄 License
+## License
 
 MIT License — free for academic and commercial use.
 
 ---
 
-## 👨‍💻 Author
-
-**Mageed Ghaleb**  
-📧 mageed.ghaleb@gmail.com  
-🔗 [LinkedIn](https://www.linkedin.com/in/mageed-ghaleb/)  
-🔗 [GitHub](https://github.com/mageed-ghaleb)
-
----
-
-> Built with ❤️ for solvers, schedules, and scientific curiosity.
-
----
-
-## 🔎 Keywords (for discoverability)
-
-MetaForge is designed for:
-
-- Job Shop Scheduling Problems (JSSP)
-- Metaheuristics (Tabu Search, Genetic Algorithm, ACO, SA)
-- Reinforcement Learning in Scheduling (Q-Learning, DQN)
-- Production Scheduling Optimization
-- Flexible Flowshops & Real-world Scheduling
-- Benchmark Comparisons and Solver Visualization
+> MetaForge V1：确定性求解为核，参数化策略为脑，Agent 协作与仿真闭环按阶段推进。
