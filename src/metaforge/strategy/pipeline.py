@@ -209,6 +209,9 @@ def run_planning(
     workers: Any = None,
     tools: Any = None,
     allow_simulated: bool = True,
+    order_analysis: Any = None,
+    constraint_analysis: Any = None,
+    resource_analysis: Any = None,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     run = create_run(
@@ -227,6 +230,9 @@ def run_planning(
         workers=workers,
         tools=tools,
         allow_simulated=allow_simulated,
+        order_analysis=order_analysis,
+        constraint_analysis=constraint_analysis,
+        resource_analysis=resource_analysis,
     )
 
     warnings = list(run.get("warnings") or [])

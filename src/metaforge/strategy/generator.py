@@ -147,6 +147,80 @@ def _try_llm_strategy(
     return None, meta
 
 
+def _constraint_from_raw(raw: Dict[str, Any]) -> Constraint:
+    ctype = str(raw.get("type") or "")
+    penalty = raw.get("penalty")
+    params = {k: v for k, v in raw.items() if k not in ("type", "penalty")}
+    return Constraint(type=ctype, params=params, penalty=penalty)
+
+
+def merge_collab_analyses(
+    strategy: SchedulingStrategy,
+    *,
+    order_analysis: Optional[Dict[str, Any]] = None,
+    constraint_analysis: Optional[Dict[str, Any]] = None,
+    resource_analysis: Optional[Dict[str, Any]] = None,
+) -> SchedulingStrategy:
+    """Merge Order/Constraint/Resource analysis artifacts into a strategy."""
+    order_analysis = order_analysis or {}
+    constraint_analysis = constraint_analysis or {}
+    resource_analysis = resource_analysis or {}
+
+    critical = list(strategy.critical_orders)
+    for jid in order_analysis.get("critical_orders") or []:
+        sid = str(jid)
+        if sid and sid not in critical:
+            critical.append(sid)
+    strategy.critical_orders = critical
+
+    hard = list(strategy.hard_constraints)
+    soft = list(strategy.soft_constraints)
+    seen_hard = {(c.type, tuple(sorted((c.params or {}).items()))) for c in hard}
+    seen_soft = {(c.type, tuple(sorted((c.params or {}).items()))) for c in soft}
+
+    for raw in constraint_analysis.get("hard_constraints") or []:
+        if not isinstance(raw, dict):
+            continue
+        c = _constraint_from_raw(raw)
+        key = (c.type, tuple(sorted((c.params or {}).items())))
+        if key not in seen_hard:
+            hard.append(c)
+            seen_hard.add(key)
+
+    for raw in constraint_analysis.get("soft_constraints") or []:
+        if not isinstance(raw, dict):
+            continue
+        c = _constraint_from_raw(raw)
+        key = (c.type, tuple(sorted((c.params or {}).items())))
+        if key not in seen_soft:
+            soft.append(c)
+            seen_soft.add(key)
+
+    oot_jobs = {
+        str(c.params.get("job_id"))
+        for c in hard
+        if c.type == "order_on_time" and c.params.get("job_id") is not None
+    }
+    for jid in critical:
+        if jid not in oot_jobs:
+            hard.append(Constraint(type="order_on_time", params={"job_id": jid}))
+            oot_jobs.add(jid)
+
+    strategy.hard_constraints = hard
+    strategy.soft_constraints = soft
+
+    bottlenecks = resource_analysis.get("bottleneck_machines") or []
+    if bottlenecks:
+        prefs = dict(strategy.machine_preferences or {})
+        prefs["bottlenecks"] = list(bottlenecks)
+        strategy.machine_preferences = prefs
+
+    provenance = dict(strategy.provenance or {})
+    provenance["collab_analyses"] = True
+    strategy.provenance = provenance
+    return strategy
+
+
 def generate_strategy(
     *,
     user_goal: str,
@@ -158,6 +232,9 @@ def generate_strategy(
     gantt_data: Any = None,
     bom: Any = None,
     allow_simulated: bool = True,
+    order_analysis: Optional[Dict[str, Any]] = None,
+    constraint_analysis: Optional[Dict[str, Any]] = None,
+    resource_analysis: Optional[Dict[str, Any]] = None,
 ) -> Tuple[SchedulingStrategy, Dict[str, Any]]:
     from metaforge.strategy.context_builder import build_for_strategy_generation
 
@@ -167,6 +244,9 @@ def generate_strategy(
         machines=machines,
         gantt_data=gantt_data,
         bom=bom,
+        order_analysis=order_analysis,
+        constraint_analysis=constraint_analysis,
+        resource_analysis=resource_analysis,
     )
 
     meta: Dict[str, Any] = {"context": context}
@@ -200,6 +280,15 @@ def generate_strategy(
             strategy = _build_rule_fallback_strategy(user_goal=user_goal, jobs=jobs)
             meta["fallback"] = True
             meta["generated_by"] = "rule_fallback"
+
+    if order_analysis or constraint_analysis or resource_analysis:
+        strategy = merge_collab_analyses(
+            strategy,
+            order_analysis=order_analysis,
+            constraint_analysis=constraint_analysis,
+            resource_analysis=resource_analysis,
+        )
+        meta["merged_collab_analyses"] = True
 
     ok, errors, fixed = validate_strategy(
         strategy,

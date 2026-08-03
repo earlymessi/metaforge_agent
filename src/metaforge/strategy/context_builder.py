@@ -105,6 +105,9 @@ def build_for_strategy_generation(
     bom: Any = None,
     existing_constraints: Optional[List[Any]] = None,
     downtime: Optional[List[Any]] = None,
+    order_analysis: Optional[Dict[str, Any]] = None,
+    constraint_analysis: Optional[Dict[str, Any]] = None,
+    resource_analysis: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Build a fixed-budget context dict for strategy generation prompts."""
     catalog = list_constraint_catalog()
@@ -122,4 +125,7 @@ def build_for_strategy_generation(
         "gantt_op_count": _gantt_op_count(gantt_data),
         "existing_constraints": list(existing_constraints or [])[:20],
         "downtime_summary": list(downtime or [])[:20],
+        "order_analysis": dict(order_analysis or {}),
+        "constraint_analysis": dict(constraint_analysis or {}),
+        "resource_analysis": dict(resource_analysis or {}),
     }
