@@ -793,6 +793,27 @@ async def execution_start(req: ExecutionStartRequest):
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@app.post("/api/execution/start_from_package")
+async def execution_start_from_package(body: Dict = Body(...)):
+    from metaforge.services.package_to_execution import start_from_package
+
+    try:
+        return await start_from_package(
+            execution_collection,
+            orders_collection,
+            package=body.get("package"),
+            run_id=body.get("run_id"),
+            plan_id=body.get("plan_id"),
+            persist_plan=bool(body.get("persist_plan", True)),
+            sim_speed=float(body.get("sim_speed") or 60),
+            jobs=body.get("jobs"),
+            plan_name=body.get("plan_name") or "Package 推荐计划",
+            candidates=body.get("candidates") or body.get("candidate_schedules"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @app.post("/api/execution/pause")
 async def execution_pause():
     from metaforge.services.production_execution import pause_execution
