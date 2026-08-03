@@ -11,10 +11,13 @@ from metaforge.planning_collab.agents.order import run_order_agent
 from metaforge.planning_collab.agents.resource import run_resource_agent
 from metaforge.planning_collab.protocol import AgentResult, AgentTask, PlanningTaskState
 from metaforge.planning_collab.summarize import summarize_agent_result
+from metaforge.planning_collab.trace import build_collab_trace
 from metaforge.strategy.pipeline import run_planning
 from metaforge.strategy.run_state import get_run
 
 _COLLAB_STORE: Dict[str, Dict[str, Any]] = {}
+# Internal: AgentResult objects for collab_trace assembly (not API-facing).
+_AGENT_RESULTS_STORE: Dict[str, Dict[str, AgentResult]] = {}
 
 
 def _fail_closed() -> bool:
@@ -158,7 +161,17 @@ def run_collab_analyze(
         state.pending_agents = [a for a in state.pending_agents if a not in completed]
         state.artifacts = artifacts
         snap = state.to_dict()
+        collab_trace = build_collab_trace(
+            collab_run_id=state.run_id,
+            stage="analyze",
+            status="FAILED",
+            agent_results=results,
+            failed_agents=failed,
+            warnings=warnings,
+        )
+        snap["collab_trace"] = collab_trace
         _COLLAB_STORE[state.run_id] = snap
+        _AGENT_RESULTS_STORE[state.run_id] = results
         return {
             "status": "FAILED",
             "run_id": state.run_id,
@@ -167,6 +180,7 @@ def run_collab_analyze(
             "warnings": warnings,
             "task_state": snap,
             "failed_agents": failed,
+            "collab_trace": collab_trace,
         }
 
     state.artifacts = artifacts
@@ -176,7 +190,17 @@ def run_collab_analyze(
     state.status = "ANALYZED"
     state.current_stage = "strategy"
     snap = state.to_dict()
+    collab_trace = build_collab_trace(
+        collab_run_id=state.run_id,
+        stage="analyze",
+        status="ANALYZED",
+        agent_results=results,
+        failed_agents=failed,
+        warnings=warnings,
+    )
+    snap["collab_trace"] = collab_trace
     _COLLAB_STORE[state.run_id] = snap
+    _AGENT_RESULTS_STORE[state.run_id] = results
     return {
         "status": "ANALYZED",
         "run_id": state.run_id,
@@ -185,6 +209,7 @@ def run_collab_analyze(
         "warnings": warnings,
         "task_state": snap,
         "failed_agents": failed,
+        "collab_trace": collab_trace,
     }
 
 
@@ -210,6 +235,7 @@ def run_collab(
         return analysis
 
     arts = analysis.get("artifacts") or {}
+    agent_results = _AGENT_RESULTS_STORE.pop(str(analysis.get("run_id") or ""), {})
     planning = run_planning(
         user_goal=user_goal,
         jobs=jobs,
@@ -229,6 +255,17 @@ def run_collab(
     out.setdefault("warnings", [])
     out["warnings"] = list(out["warnings"]) + list(out["collab_warnings"])
 
+    collab_trace = build_collab_trace(
+        collab_run_id=str(analysis.get("run_id") or ""),
+        stage=str(out.get("stage") or "done"),
+        status=str(out.get("status") or ""),
+        agent_results=agent_results,
+        failed_agents=analysis.get("failed_agents") or [],
+        warnings=out["warnings"],
+        planning_run=out,
+    )
+    out["collab_trace"] = collab_trace
+
     # Keep collab store in sync with planning outcome.
     snap = dict(analysis.get("task_state") or {})
     snap["artifacts"] = {
@@ -243,6 +280,7 @@ def run_collab(
     snap["status"] = out.get("status")
     snap["current_stage"] = out.get("stage") or snap.get("current_stage")
     snap["planning_run_id"] = out.get("run_id")
+    snap["collab_trace"] = collab_trace
     _COLLAB_STORE[analysis["run_id"]] = snap
     out["task_state"] = snap
     return out
