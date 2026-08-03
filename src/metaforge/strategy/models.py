@@ -18,6 +18,16 @@ class Constraint:
 
 
 @dataclass
+class SolverPolicy:
+    primary_solvers: List[str]
+    fallback_solver: Optional[str]
+    time_budget_seconds: float
+    max_candidates: int
+    parameters: Dict[str, Any]
+    reason: str
+
+
+@dataclass
 class SchedulingStrategy:
     strategy_id: Optional[str] = None
     base_template: Optional[str] = None
