@@ -356,177 +356,12 @@
           </div>
         </div>
 
-        <div class="planning-panel">
-          <div class="ops-title">协同排产（Collab + 策略 V1）</div>
-          <el-form-item label="自然语言目标" label-width="auto" style="margin-bottom: 8px">
-            <el-input
-              v-model="planningGoal"
-              type="textarea"
-              :rows="2"
-              placeholder="例如：交付优先，保证工单A按期，减少换型"
-            />
-          </el-form-item>
-          <div class="ops-btns" style="margin-bottom: 8px">
-            <el-button
-              size="small"
-              type="primary"
-              plain
-              :loading="planningGenerating"
-              :disabled="!planningGoal?.trim()"
-              @click="generatePlanningStrategy"
-            >
-              AI 生成策略
-            </el-button>
-            <el-button
-              size="small"
-              type="success"
-              :loading="planningRunning"
-              :disabled="!planningGoal?.trim() || planningJobsDisabled"
-              @click="runSmartPlanning"
-            >
-              智能排产运行
-            </el-button>
-          </div>
-          <el-collapse v-if="strategyDraftJson" v-model="strategyPreviewOpen" class="strategy-preview-collapse">
-            <el-collapse-item title="Strategy JSON 预览" name="preview">
-              <el-input
-                v-model="strategyDraftJson"
-                type="textarea"
-                :rows="8"
-                class="strategy-json-input"
-              />
-            </el-collapse-item>
-          </el-collapse>
-          <el-collapse v-if="collabAnalyses" v-model="collabAnalysisOpen" class="strategy-preview-collapse">
-            <el-collapse-item title="三分析摘要（订单 / 约束 / 资源）" name="analyses">
-              <div v-if="collabAnalyses.order_analysis" class="planning-result-row">
-                <span class="planning-result-k">订单</span>
-                <span>{{ collabAnalyses.order_analysis.summary || formatCriticalOrders(collabAnalyses.order_analysis) }}</span>
-              </div>
-              <div v-if="collabAnalyses.constraint_analysis" class="planning-result-row">
-                <span class="planning-result-k">约束</span>
-                <span>{{ collabAnalyses.constraint_analysis.summary || formatConstraintBrief(collabAnalyses.constraint_analysis) }}</span>
-              </div>
-              <div v-if="collabAnalyses.resource_analysis" class="planning-result-row">
-                <span class="planning-result-k">资源</span>
-                <span>{{ collabAnalyses.resource_analysis.summary || formatResourceBrief(collabAnalyses.resource_analysis) }}</span>
-              </div>
-            </el-collapse-item>
-          </el-collapse>
-          <div v-if="planningRunId && planningRunStatus === 'WAITING_APPROVAL'" class="planning-hitl">
-            <div class="ops-label">策略确认（HITL）</div>
-            <div class="ops-btns">
-              <el-button size="small" type="success" :loading="planningHitlLoading" @click="approvePlanningStrategy">
-                批准
-              </el-button>
-              <el-button size="small" type="danger" plain :loading="planningHitlLoading" @click="rejectPlanningStrategy">
-                拒绝
-              </el-button>
-              <el-button size="small" type="warning" plain :loading="planningHitlLoading" @click="editApprovePlanningStrategy">
-                编辑后批准
-              </el-button>
-            </div>
-            <div v-if="planningRunId" class="ops-tip">Run ID：{{ planningRunId }}</div>
-          </div>
-          <div v-if="planningResult" class="planning-result">
-            <div class="ops-label">排产结果</div>
-            <div class="planning-result-row">
-              <span class="planning-result-k">推荐方案</span>
-              <span>{{ planningResult.recommended_schedule_id || '—' }}</span>
-            </div>
-            <div v-if="planningResult.recommendation_reason" class="planning-result-reason">
-              {{ planningResult.recommendation_reason }}
-            </div>
-            <div v-if="planningResult.simulated_fields?.length" class="planning-result-row">
-              <span class="planning-result-k">模拟字段</span>
-              <span>{{ planningResult.simulated_fields.join('、') }}</span>
-            </div>
-            <div v-if="planningResult.hard_violations?.length" class="planning-violations">
-              <div class="ops-label">硬约束违反（{{ planningResult.hard_violations.length }}）</div>
-              <ul class="planning-violation-list">
-                <li v-for="(v, i) in planningResult.hard_violations.slice(0, 5)" :key="i">
-                  {{ v.schedule_id || '—' }}：{{ v.message || v.type || JSON.stringify(v) }}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div class="weights-panel">
-          <el-form-item label="自然语言排程（可选）" label-width="auto" style="margin-bottom: 8px">
-            <el-input
-              v-model="scheduleMessage"
-              type="textarea"
-              :rows="2"
-              placeholder="例如：交付优先，对比禁忌搜索和 SPT"
-            />
-          </el-form-item>
-          <div class="ops-btns" style="margin-bottom: 12px">
-            <el-button size="small" :disabled="!scheduleMessage?.trim()" @click="previewScheduleIntent">
-              预览解析
-            </el-button>
-            <span v-if="lastPlanner" class="ops-tip">上次解析：{{ lastPlanner }}</span>
-          </div>
-          <div class="row" style="margin-bottom: 10px">
-            <span class="weights-title" style="margin: 0">策略模板</span>
-            <div class="spacer" />
-            <el-select
-              v-model="selectedStrategyId"
-              placeholder="一键套用权重"
-              clearable
-              style="width: 100%"
-              @change="applyStrategyTemplate"
-            >
-              <el-option v-for="s in strategyTemplates" :key="s.id" :label="s.name" :value="s.id" />
-            </el-select>
-          </div>
-          <el-form-item label="随机种子（可选，复现）" label-width="auto" style="margin-bottom: 10px">
-            <el-input-number v-model="randomSeed" :min="0" :step="1" controls-position="right" style="width: 100%" clearable />
-          </el-form-item>
-          <div class="weights-title">多目标权重（越小越好）</div>
-          <el-form label-position="top" class="weights-form">
-            <div class="weights-grid">
-              <el-form-item>
-                <template #label>
-                  <div class="wlabel">完工时间（Makespan）</div>
-                </template>
-                <el-input-number v-model="weights.makespan" :step="0.1" :min="0" controls-position="right" style="width: 100%" />
-                <div class="wdesc">最大完工时间</div>
-              </el-form-item>
-
-              <el-form-item>
-                <template #label>
-                  <div class="wlabel">交期违约（加权 Tardiness）</div>
-                </template>
-                <el-input-number v-model="weights.weighted_tardiness_total" :step="0.1" :min="0" controls-position="right" style="width: 100%" />
-                <div class="wdesc">逾期时间按优先级加权</div>
-              </el-form-item>
-
-              <el-form-item>
-                <template #label>
-                  <div class="wlabel">能耗成本（Energy Cost）</div>
-                </template>
-                <el-input-number v-model="weights.energy_cost" :step="0.01" :min="0" controls-position="right" style="width: 100%" />
-                <div class="wdesc">功率 × 分时电价 × 时长</div>
-              </el-form-item>
-
-              <el-form-item>
-                <template #label>
-                  <div class="wlabel">负载均衡（机器忙碌度 CV）</div>
-                </template>
-                <el-input-number v-model="weights.machine_busy_cv" :step="0.5" :min="0" controls-position="right" style="width: 100%" />
-                <div class="wdesc">各机器忙碌度离散程度</div>
-              </el-form-item>
-            </div>
-          </el-form>
-          <el-alert
-            class="whelp"
-            type="info"
-            :closable="false"
-            show-icon
-            title="综合评分 = w1·makespan + w2·加权交期违约 + w3·能耗成本 + w4·负载CV"
-          />
-        </div>
+        <PlanningWorkbench
+          :disabled="planningJobsDisabled"
+          :jobs="buildPlanningJobs()"
+          :machines="buildPlanningMachines()"
+          :job-ids="planningJobIds"
+        />
 
         <el-space direction="vertical" fill style="width:100%">
           <div v-for="group in solverGroups" :key="group.title">
@@ -564,13 +399,14 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { api } from '../api/client'
 import { useResultsStore } from '../stores/useResultsStore'
 import MaterialCheckDialog from '../components/MaterialCheckDialog.vue'
 import PersistConfirmDialog from '../components/PersistConfirmDialog.vue'
+import PlanningWorkbench from '../components/planning/PlanningWorkbench.vue'
 import { runPipelineAgent } from '../api/client'
 import { useWorkContextStore } from '../stores/useWorkContextStore'
 import { useAssistantStore } from '../stores/useAssistantStore'
@@ -624,16 +460,11 @@ const customJobs = ref([
   },
 ])
 
-const strategyTemplates = ref([])
-const selectedStrategyId = ref('')
 const routingTemplates = ref([])
 const selectedRoutingId = ref('')
-const randomSeed = ref(null)
 const useAsyncRun = ref(true)
 const enforceMaterial = ref(true)
 const materialCatalog = ref([])
-const scheduleMessage = ref('')
-const lastPlanner = ref('')
 const materialCheckDialogVisible = ref(false)
 const persistDialogVisible = ref(false)
 const pipelineRunning = ref(false)
@@ -645,22 +476,21 @@ const persistPending = ref({
 })
 const showTaskAdvanced = ref(false)
 
-const planningGoal = ref('')
-const strategyDraftJson = ref('')
-const strategyPreviewOpen = ref(['preview'])
-const planningRunId = ref('')
-const planningRunStatus = ref('')
-const planningGenerating = ref(false)
-const planningRunning = ref(false)
-const planningHitlLoading = ref(false)
-const planningResult = ref(null)
-const collabAnalyses = ref(null)
-const collabAnalysisOpen = ref(['analyses'])
+const DEFAULT_WEIGHTS = {
+  makespan: 1.0,
+  weighted_tardiness_total: 0.5,
+  energy_cost: 0.05,
+  machine_busy_cv: 10.0,
+}
 
 const planningJobsDisabled = computed(() => {
   if (inputMode.value === 'custom') return customJobs.value.length === 0
-  return !selectedBenchmark.value
+  return true
 })
+
+const planningJobIds = computed(() =>
+  buildPlanningJobs().map((j) => String(j.job_id || j.name || '')).filter(Boolean),
+)
 
 const bomTemplates = [
   {
@@ -705,13 +535,6 @@ const selectedSolvers = ref(['spt', 'ts'])
 const allSolverIds = computed(() =>
   solverGroups.value.flatMap((g) => g.items.map((x) => x.id)),
 )
-
-const weights = reactive({
-  makespan: 1.0,
-  weighted_tardiness_total: 0.5,
-  energy_cost: 0.05,
-  machine_busy_cv: 10.0,
-})
 
 const isAllSelected = computed(() =>
   allSolverIds.value.length > 0 && selectedSolvers.value.length === allSolverIds.value.length,
@@ -871,24 +694,6 @@ function addTask(jobIdx) {
   j.tasks.push({ name: `Op-${j.tasks.length + 1}`, machine_id: 0, machine_options_text: '0', machine_group: '', duration: 5, setup_time: null, unit_time: null, quantity: null })
 }
 
-function syncStrategyToStore(id) {
-  if (!id) {
-    store.setSchedulingStrategy('', '')
-    return
-  }
-  const t = strategyTemplates.value.find((x) => x.id === id)
-  store.setSchedulingStrategy(id, t?.name || id)
-}
-
-function applyStrategyTemplate(id) {
-  if (!id) return
-  const t = strategyTemplates.value.find((x) => x.id === id)
-  if (!t?.weights) return
-  Object.assign(weights, t.weights)
-  syncStrategyToStore(id)
-  ElMessage.success(`已套用策略：${t.name}`)
-}
-
 function mapTaskPayload(t, job) {
   const machineOptions = parseMachineOptions(t.machine_options_text, t.machine_id)
   const payload = {
@@ -927,191 +732,6 @@ function buildPlanningMachines() {
     }
   }
   return [...ids].map((id) => ({ machine_id: id, id }))
-}
-
-function extractPlanningResult(data) {
-  const pkg = data?.package || {}
-  const ev = data?.evaluation || pkg.evaluation || {}
-  const strategy = data?.strategy_approved || data?.strategy_draft || pkg.strategy || {}
-  const simulated = strategy?.provenance?.simulated_fields
-  return {
-    recommended_schedule_id: ev.recommended_schedule_id ?? pkg.recommended_schedule_id ?? null,
-    hard_violations: ev.hard_violations || [],
-    recommendation_reason: ev.recommendation_reason || '',
-    simulated_fields: Array.isArray(simulated) ? simulated : [],
-  }
-}
-
-function formatCriticalOrders(orderAnalysis) {
-  const ids = orderAnalysis?.critical_orders || []
-  return ids.length ? `关键订单：${ids.join('、')}` : '无关键订单'
-}
-
-function formatConstraintBrief(constraintAnalysis) {
-  const hard = (constraintAnalysis?.hard_constraints || []).map((c) => c.type).filter(Boolean)
-  const soft = (constraintAnalysis?.soft_constraints || []).map((c) => c.type).filter(Boolean)
-  const parts = []
-  if (hard.length) parts.push(`硬：${hard.join(',')}`)
-  if (soft.length) parts.push(`软：${soft.join(',')}`)
-  return parts.join('；') || '无约束候选'
-}
-
-function formatResourceBrief(resourceAnalysis) {
-  const bn = resourceAnalysis?.bottleneck_machines || []
-  return bn.length ? `瓶颈设备：${bn.join('、')}` : '无瓶颈标记'
-}
-
-function handlePlanningRunResponse(data) {
-  if (!data) return
-  planningRunId.value = data.run_id || planningRunId.value
-  planningRunStatus.value = data.status || ''
-  if (data.artifacts) {
-    collabAnalyses.value = {
-      order_analysis: data.artifacts.order_analysis || null,
-      constraint_analysis: data.artifacts.constraint_analysis || null,
-      resource_analysis: data.artifacts.resource_analysis || null,
-    }
-  }
-  if (data.strategy_draft) {
-    strategyDraftJson.value = JSON.stringify(data.strategy_draft, null, 2)
-  }
-  if (data.status === 'COMPLETED') {
-    planningResult.value = extractPlanningResult(data)
-    ElMessage.success('智能排产完成')
-  } else if (data.status === 'WAITING_APPROVAL') {
-    planningResult.value = null
-    ElMessage.info('策略已生成，请确认后批准')
-  } else if (data.validation_errors?.length) {
-    ElMessage.warning(`策略校验未通过（${data.validation_errors.length} 项）`)
-  } else if (data.status === 'CANCELLED') {
-    planningResult.value = null
-  }
-}
-
-async function ensurePlanningRun() {
-  if (planningRunId.value) return planningRunId.value
-  const goal = planningGoal.value?.trim()
-  if (!goal) throw new Error('请先输入自然语言目标')
-  const jobs = buildPlanningJobs()
-  if (!jobs.length) throw new Error('请先配置工单数据（自定义模式）')
-  const { data } = await api.post('/api/planning/collab/run', {
-    user_goal: goal,
-    jobs,
-    machines: buildPlanningMachines(),
-    skip_strategy_hitl: false,
-  })
-  handlePlanningRunResponse(data)
-  if (!data?.run_id) throw new Error('未返回 run_id')
-  return data.run_id
-}
-
-async function generatePlanningStrategy() {
-  const goal = planningGoal.value?.trim()
-  if (!goal) return ElMessage.warning('请先输入自然语言目标')
-  if (inputMode.value !== 'custom') {
-    return ElMessage.warning('参数化策略请在「自定义/数据库」模式下使用')
-  }
-  if (!customJobs.value.length) return ElMessage.warning('请先添加工单')
-  planningGenerating.value = true
-  try {
-    const { data } = await api.post('/api/planning/strategy/generate', {
-      user_goal: goal,
-      jobs: buildPlanningJobs(),
-      machines: buildPlanningMachines(),
-    })
-    strategyDraftJson.value = JSON.stringify(data.strategy, null, 2)
-    planningRunId.value = ''
-    planningRunStatus.value = ''
-    planningResult.value = null
-    ElMessage.success(`策略已生成（${data.meta?.generated_by || data.meta?.source || 'ok'}）`)
-  } catch (e) {
-    ElMessage.error(`生成失败: ${e?.response?.data?.detail || e?.message || e}`)
-  } finally {
-    planningGenerating.value = false
-  }
-}
-
-async function runSmartPlanning() {
-  const goal = planningGoal.value?.trim()
-  if (!goal) return ElMessage.warning('请先输入自然语言目标')
-  if (inputMode.value !== 'custom') {
-    return ElMessage.warning('智能排产请在「自定义/数据库」模式下使用')
-  }
-  if (!customJobs.value.length) return ElMessage.warning('请先添加工单')
-  planningRunning.value = true
-  planningResult.value = null
-  collabAnalyses.value = null
-  try {
-    const { data } = await api.post('/api/planning/collab/run', {
-      user_goal: goal,
-      jobs: buildPlanningJobs(),
-      machines: buildPlanningMachines(),
-      skip_strategy_hitl: false,
-    })
-    handlePlanningRunResponse(data)
-  } catch (e) {
-    ElMessage.error(`运行失败: ${e?.response?.data?.detail || e?.message || e}`)
-  } finally {
-    planningRunning.value = false
-  }
-}
-
-async function approvePlanningStrategy() {
-  planningHitlLoading.value = true
-  try {
-    await ensurePlanningRun()
-    const { data } = await api.post(`/api/planning/runs/${planningRunId.value}/strategy/approve`, {})
-    handlePlanningRunResponse(data)
-  } catch (e) {
-    ElMessage.error(`批准失败: ${e?.response?.data?.detail || e?.message || e}`)
-  } finally {
-    planningHitlLoading.value = false
-  }
-}
-
-async function rejectPlanningStrategy() {
-  planningHitlLoading.value = true
-  try {
-    await ensurePlanningRun()
-    const { data } = await api.post(`/api/planning/runs/${planningRunId.value}/strategy/reject`, {
-      reason: '用户拒绝',
-    })
-    handlePlanningRunResponse(data)
-    ElMessage.info('已拒绝策略')
-  } catch (e) {
-    ElMessage.error(`拒绝失败: ${e?.response?.data?.detail || e?.message || e}`)
-  } finally {
-    planningHitlLoading.value = false
-  }
-}
-
-async function editApprovePlanningStrategy() {
-  if (!strategyDraftJson.value?.trim()) {
-    return ElMessage.warning('请先填写 Strategy JSON')
-  }
-  let strategy
-  try {
-    strategy = JSON.parse(strategyDraftJson.value)
-  } catch {
-    return ElMessage.error('Strategy JSON 格式无效')
-  }
-  planningHitlLoading.value = true
-  try {
-    await ensurePlanningRun()
-    const { data } = await api.post(
-      `/api/planning/runs/${planningRunId.value}/strategy/edit_and_approve`,
-      {
-        strategy,
-        jobs: buildPlanningJobs(),
-        machines: buildPlanningMachines(),
-      },
-    )
-    handlePlanningRunResponse(data)
-  } catch (e) {
-    ElMessage.error(`编辑批准失败: ${e?.response?.data?.detail || e?.message || e}`)
-  } finally {
-    planningHitlLoading.value = false
-  }
 }
 
 function mapJobPayload(j) {
@@ -1538,124 +1158,14 @@ async function postRunMaybeAsync(payload) {
   }
 }
 
-async function previewScheduleIntent() {
-  const msg = scheduleMessage.value?.trim()
-  if (!msg) return ElMessage.warning('请先输入自然语言描述')
-  if (inputMode.value !== 'custom') {
-    return ElMessage.warning('自然语言排程请在「自定义/数据库」模式下使用')
-  }
-  if (!customJobs.value.length) return ElMessage.warning('请先添加工单')
-  try {
-    const { data } = await api.post('/api/agent/schedule', {
-      message: msg,
-      custom_data: customJobs.value.map((j) => mapJobPayload(j)),
-      solvers: selectedSolvers.value,
-      weights: { ...weights },
-      enforce_material: enforceMaterial.value,
-      parse_only: true,
-    })
-    const interp = data.interpretation || {}
-    lastPlanner.value = data.planner || interp.planner || ''
-    const lines = [
-      interp.summary_zh || '',
-      '',
-      `解析方式：${lastPlanner.value || '—'}`,
-      `策略：${interp.strategy_name || interp.strategy_id || '—'}`,
-      `算法：${(interp.solvers || []).join(', ') || '—'}`,
-    ]
-    await ElMessageBox.alert(lines.join('\n'), '排程意图预览', { confirmButtonText: '知道了' })
-  } catch (e) {
-    ElMessage.error(`预览失败: ${e?.response?.data?.detail || e?.message || e}`)
-  }
-}
-
 async function run() {
   store.computing = true
   try {
-    const nlMsg = scheduleMessage.value?.trim()
-    if (nlMsg && inputMode.value === 'custom' && customJobs.value.length) {
-      const agentPayload = {
-        message: nlMsg,
-        custom_data: customJobs.value.map((j) => mapJobPayload(j)),
-        solvers: selectedSolvers.value,
-        weights: { ...weights },
-        enforce_material: enforceMaterial.value,
-      }
-      if (randomSeed.value != null && randomSeed.value !== '') {
-        agentPayload.random_seed = Number(randomSeed.value)
-      }
-      if (useAsyncRun.value) {
-        agentPayload.async_run = true
-      }
-      const { data } = await api.post('/api/agent/schedule', agentPayload)
-      if (data?.error) throw new Error(data.error)
-      if (data.status === 'need_data') {
-        throw new Error(data.message_zh || '缺少工单数据')
-      }
-      if (data.status === 'submitted' && data.task_id) {
-        ElMessage.info('已提交异步任务，正在计算…')
-        const resultPayload = await pollAsyncRun(data.task_id)
-        const sid = data.interpretation?.strategy_id || selectedStrategyId.value
-        if (sid) selectedStrategyId.value = sid
-        syncStrategyToStore(sid)
-        store.lastPayload = {
-          ...agentPayload,
-          strategy_id: sid || undefined,
-          strategy_name: data.interpretation?.strategy_name,
-        }
-        store.setResults(resultPayload.data)
-        store.setMaterialCheck(resultPayload.material_check || null)
-        lastPlanner.value = data.planner || data.interpretation?.planner || ''
-        if (currentPlanId.value) {
-          await saveScheduleSnapshotToPlan(resultPayload.data, {
-            interpretation: data.interpretation || undefined,
-          })
-        }
-        router.push('/reports')
-        return
-      }
-      if (data.status !== 'success') {
-        throw new Error(data.error || data.status || '排程失败')
-      }
-      lastPlanner.value = data.planner || data.interpretation?.planner || ''
-      const sid = data.interpretation?.strategy_id || selectedStrategyId.value
-      if (sid) selectedStrategyId.value = sid
-      syncStrategyToStore(sid)
-      store.lastPayload = {
-        ...agentPayload,
-        strategy_id: sid || undefined,
-        strategy_name: data.interpretation?.strategy_name,
-      }
-      store.currentPlanInput = customJobs.value
-      store.currentPlanName = planName.value
-      store.currentPlanId = currentPlanId.value
-      store.setResults(data.data)
-      store.setImpactReport(null)
-      store.setMaterialCheck(data.material_check || null)
-      if (data.material_check && !data.material_check.feasible) {
-        materialCheckDialogVisible.value = true
-        ElMessage.warning('排程完成，但物料静态预检显示库存不足')
-      }
-      if (currentPlanId.value) {
-        await saveScheduleSnapshotToPlan(data.data, {
-          interpretation: data.interpretation || undefined,
-        })
-      }
-      router.push('/reports')
-      return
-    }
-
     const payload = {
       solvers: selectedSolvers.value,
-      weights: { ...weights },
-      strategy_id: selectedStrategyId.value || undefined,
+      weights: { ...DEFAULT_WEIGHTS },
     }
-    if (selectedStrategyId.value) {
-      const t = strategyTemplates.value.find((x) => x.id === selectedStrategyId.value)
-      if (t?.name) payload.strategy_name = t.name
-    }
-    syncStrategyToStore(selectedStrategyId.value)
-    if (randomSeed.value != null && randomSeed.value !== '') payload.random_seed = Number(randomSeed.value)
+    store.setSchedulingStrategy('', '')
     if (inputMode.value === 'file') payload.benchmark_file = selectedBenchmark.value
     else {
       payload.custom_data = customJobs.value.map((j) => mapJobPayload(j))
@@ -1720,15 +1230,6 @@ async function fetchSolverCatalog() {
   }
 }
 
-async function fetchStrategyTemplates() {
-  try {
-    const { data } = await api.get('/api/strategy/templates')
-    strategyTemplates.value = data.templates || []
-  } catch (e) {
-    console.warn('strategy templates', e)
-  }
-}
-
 function hydratePlanFromStorage() {
   try {
     const raw = localStorage.getItem('aps_load_data')
@@ -1775,7 +1276,6 @@ watch(
 onMounted(async () => {
   fetchBenchmarks()
   fetchSolverCatalog()
-  fetchStrategyTemplates()
   fetchRoutingTemplates()
   fetchMaterialCatalog()
   await fetchPlans()
@@ -1830,27 +1330,6 @@ onMounted(async () => {
 .ops-label { font-size: 11px; color: #909399; margin-bottom: 4px; font-weight: 600; }
 .ops-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .ops-tip { font-size: 11px; color: #909399; margin-top: 4px; line-height: 1.3; }
-.planning-panel {
-  padding: 12px;
-  margin-bottom: 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 8px;
-  background: #f6ffed;
-}
-.planning-hitl { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #dcdfe6; }
-.planning-result { margin-top: 10px; padding-top: 8px; border-top: 1px solid #ebeef5; }
-.planning-result-row { font-size: 12px; color: #303133; margin-bottom: 4px; }
-.planning-result-k { color: #909399; margin-right: 8px; }
-.planning-result-reason { font-size: 12px; color: #606266; line-height: 1.4; margin: 6px 0; }
-.planning-violations { margin-top: 6px; }
-.planning-violation-list { margin: 4px 0 0; padding-left: 18px; font-size: 11px; color: #f56c6c; }
-.strategy-preview-collapse { margin-bottom: 8px; border: none; }
-.strategy-preview-collapse :deep(.el-collapse-item__header) { font-size: 12px; height: 36px; }
-.strategy-json-input :deep(textarea) { font-family: Consolas, Monaco, monospace; font-size: 11px; }
-.weights-panel { padding: 12px; border: 1px solid #ebeef5; border-radius: 8px; background: #fafcff; margin-bottom: 12px; }
-.weights-title { font-size: 13px; font-weight: 700; color: #303133; margin-bottom: 8px; }
-.weights-form :deep(.el-form-item) { margin-bottom: 10px; }
-.weights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
 .job-card :deep(.el-card__header) { padding: 12px 16px; background: #fafbfc; border-bottom: 1px solid #ebeef5; }
 .job-card :deep(.el-card__body) { padding: 14px 16px; }
 .job-card { border: 1px solid #e4e7ed; margin-bottom: 4px; }
@@ -1949,15 +1428,11 @@ onMounted(async () => {
   border: 1px dashed #dcdfe6;
 }
 .task-block { margin-bottom: 4px; }
-.wlabel { font-weight: 700; color:#303133; font-size: 12px; line-height: 1.3; }
-.wdesc { font-size: 11px; color: #909399; margin-top: 4px; line-height: 1.2; }
-.whelp { margin-top: 2px; }
 .due-label { font-size: 11px; color: #909399; }
 .group-title { font-size: 12px; color: #909399; margin-bottom: 6px; font-weight: 700; }
 .solver-list { display: grid; grid-template-columns: 1fr 1fr; row-gap: 6px; }
 .solver-tag { margin-left: 6px; vertical-align: middle; }
 @media (max-width: 1280px) {
-  .weights-grid { grid-template-columns: 1fr; }
   .job-head-grid {
     grid-template-columns: 1fr 1fr;
   }
