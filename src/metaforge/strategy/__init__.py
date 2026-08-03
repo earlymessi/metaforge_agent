@@ -13,6 +13,8 @@ from metaforge.strategy.models import Constraint, SchedulingStrategy, SolverPoli
 from metaforge.strategy.solver_policy import build_solver_policy
 from metaforge.strategy.presets import list_presets, strategy_from_preset
 from metaforge.strategy.evaluator import evaluate_candidates
+from metaforge.strategy.run_state import create_run, get_run, update_run
+from metaforge.strategy.hitl import approve_strategy, edit_and_approve, reject_strategy
 
 __all__ = [
     "Constraint",
@@ -31,4 +33,10 @@ __all__ = [
     "strategy_from_preset",
     "validate_strategy",
     "evaluate_candidates",
+    "create_run",
+    "get_run",
+    "update_run",
+    "approve_strategy",
+    "reject_strategy",
+    "edit_and_approve",
 ]
