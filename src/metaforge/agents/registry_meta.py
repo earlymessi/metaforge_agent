@@ -22,6 +22,8 @@ AGENT_REGISTRY: List[Dict[str, Any]] = [
 
         "scenario": "排程",
 
+        "replaced_by": "planning_collab",
+
         "endpoint": "/api/agents/scheduling/run",
 
         "allowed_tools": [
