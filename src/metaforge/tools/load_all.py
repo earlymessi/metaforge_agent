@@ -13,3 +13,4 @@ def load_all_tools() -> None:
     import metaforge.tools.data  # noqa: F401
     import metaforge.tools.execution  # noqa: F401
     import metaforge.tools.memory  # noqa: F401
+    import metaforge.tools.planning  # noqa: F401

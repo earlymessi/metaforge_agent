@@ -23,15 +23,26 @@ def get_tool(name: str) -> ToolSpec:
 
 
 def list_tools() -> List[Dict[str, Any]]:
-    return [
-        {
+    out: List[Dict[str, Any]] = []
+    for spec in sorted(_TOOL_REGISTRY.values(), key=lambda s: s.name):
+        entry: Dict[str, Any] = {
             "name": spec.name,
             "description_zh": spec.description_zh,
             "input_schema": spec.input_schema,
             "output_schema": spec.output_schema,
         }
-        for spec in sorted(_TOOL_REGISTRY.values(), key=lambda s: s.name)
-    ]
+        if spec.timeout_seconds is not None:
+            entry["timeout_seconds"] = spec.timeout_seconds
+        if spec.retry_policy is not None:
+            entry["retry_policy"] = spec.retry_policy
+        if spec.risk_level != "allow":
+            entry["risk_level"] = spec.risk_level
+        if spec.idempotency_key_fields is not None:
+            entry["idempotency_key_fields"] = spec.idempotency_key_fields
+        if spec.permission is not None:
+            entry["permission"] = spec.permission
+        out.append(entry)
+    return out
 
 
 def run_tool(name: str, params: Dict[str, Any], ctx: ToolContext) -> ToolResult:

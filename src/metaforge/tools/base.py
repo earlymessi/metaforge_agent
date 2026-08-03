@@ -37,3 +37,8 @@ class ToolSpec:
     input_schema: Dict[str, Any]
     output_schema: Dict[str, Any]
     handler: ToolHandler
+    timeout_seconds: Optional[float] = None
+    retry_policy: Optional[Dict[str, Any]] = None
+    risk_level: str = "allow"  # allow | ask | deny
+    idempotency_key_fields: Optional[List[str]] = None
+    permission: Optional[str] = None
