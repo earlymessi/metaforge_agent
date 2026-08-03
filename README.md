@@ -182,7 +182,7 @@ flowchart LR
 - [x] `collab_trace`：Supervisor 阶段 + 三 AgentResult 摘要 + S1 `strategy_trace`
 - [x] e2e：摘要失败仍可 COMPLETED；`built_from_jobs` + recommended
 - [x] 测试：`tests/planning_collab/` + strategy / router 回归
-- [x] 旧 scheduling **主路径已替换**；`SchedulingAgentRunner` 暂留（Flag=0 + 遗留单测：persist/LLM plan/clarification），后续独立 PR 删除
+- [x] 旧 scheduling **主路径已替换**；`SchedulingAgentRunner` **已删除**（`get_agent("scheduling")` 固定 Bridge；`PLANNING_COLLAB_V1` 仅控制 `/api/planning/collab/*` 开关）
 
 ### 同构迁移 Backlog（S2 不做，后续替换即删旧路径）
 

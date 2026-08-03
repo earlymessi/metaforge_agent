@@ -20,31 +20,41 @@ def test_scheduling_prompt_list_and_benchmark():
 
 
 def test_react_reflect_use_structured_prompt():
-    from metaforge.agents.scheduling import SchedulingAgentRunner
-
+    _SCHEDULING_TOOLS = [
+        "scheduling.parse_intent",
+        "scheduling.run",
+        "scheduling.list_catalog",
+        "scheduling.ask_clarification",
+    ]
     react = prompts.react_system(
         agent_id="scheduling",
-        name_zh=SchedulingAgentRunner.name_zh,
-        allowed_tools=SchedulingAgentRunner.allowed_tools,
+        name_zh="智能排程",
+        allowed_tools=_SCHEDULING_TOOLS,
     )
     assert "ReAct" in react
     assert "finish" in react
     reflect = prompts.reflect_system(
         agent_id="scheduling",
-        name_zh=SchedulingAgentRunner.name_zh,
-        allowed_tools=SchedulingAgentRunner.allowed_tools,
+        name_zh="智能排程",
+        allowed_tools=_SCHEDULING_TOOLS,
     )
     assert "retry" in reflect
     assert "human" in reflect
 
 
 def test_scheduling_plan_prompt_includes_persist_tools():
-    from metaforge.agents.scheduling import SchedulingAgentRunner
-
+    tools = [
+        "scheduling.parse_intent",
+        "scheduling.run",
+        "data.load_plan",
+        "delivery.assess",
+        "data.propose_persist",
+        "data.confirm_persist",
+    ]
     sys_prompt = prompts.plan_system(
         agent_id="scheduling",
-        name_zh=SchedulingAgentRunner.name_zh,
-        allowed_tools=SchedulingAgentRunner.allowed_tools,
+        name_zh="智能排程",
+        allowed_tools=tools,
     )
     assert "data.load_plan" in sys_prompt
     assert "data.propose_persist" in sys_prompt

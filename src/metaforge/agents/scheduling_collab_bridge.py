@@ -9,14 +9,21 @@ from metaforge.planning_collab.supervisor import run_collab
 
 
 class SchedulingCollabBridge(BaseAgent):
-    """Thin agent that replaces SchedulingAgentRunner when PLANNING_COLLAB_V1=1."""
+    """Thin agent: planning_collab Supervisor (replaces SchedulingAgentRunner)."""
 
     agent_id = "scheduling"
     name_zh = "智能排程"
     allowed_tools: List[str] = []
 
     def build_rule_plan(self, request: AgentRequest) -> List[PlanStep]:
-        return []
+        self._plan_planner = "planning_collab"
+        return [
+            PlanStep("collab", "planning.collab.run", {}),
+        ]
+
+    def build_plan(self, request: AgentRequest) -> List[PlanStep]:
+        """Skip LLM Tool-plan — collab Supervisor owns orchestration."""
+        return self.build_rule_plan(request)
 
     def run(
         self,
@@ -36,13 +43,16 @@ class SchedulingCollabBridge(BaseAgent):
             or extras.get("machines")
             or []
         )
+        # Bridge also accepts custom_data as jobs when APS/orchestrator hydrate.
+        if not jobs and ctx.get("custom_data"):
+            jobs = ctx.get("custom_data") or []
         user_goal = (
             (request.message or "").strip()
             or str(params.get("user_goal") or "")
             or "综合平衡排程"
         )
         skip_hitl = bool(params.get("skip_strategy_hitl", True))
-        problem = params.get("problem") or ctx.get("problem")
+        problem = params.get("problem") or ctx.get("problem") or extras.get("problem")
 
         if on_step_start:
             on_step_start({"step_id": "collab", "tool": "planning.collab.run"})

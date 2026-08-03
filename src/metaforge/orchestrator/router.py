@@ -529,28 +529,16 @@ def resolve_agent_id(message: str = "", intent: Optional[str] = None) -> str:
     return resolve_agent_route(message, intent)["agent_id"]
 
 
-def _planning_collab_enabled() -> bool:
-    import os
-
-    return os.getenv("PLANNING_COLLAB_V1", "1").strip() not in ("0", "false", "False")
-
-
 def get_agent(agent_id: str):
     from metaforge.agents.commitment_collab_bridge import CommitmentCollabBridge
     from metaforge.agents.events_collab_bridge import EventsCollabBridge
     from metaforge.agents.kitting_collab_bridge import KittingCollabBridge
     from metaforge.agents.plans_collab_bridge import PlansCollabBridge
-    from metaforge.agents.scheduling import SchedulingAgentRunner
+    from metaforge.agents.scheduling_collab_bridge import SchedulingCollabBridge
     from metaforge.agents.whatif_collab_bridge import WhatifCollabBridge
 
-    scheduling_cls = SchedulingAgentRunner
-    if agent_id == "scheduling" and _planning_collab_enabled():
-        from metaforge.agents.scheduling_collab_bridge import SchedulingCollabBridge
-
-        scheduling_cls = SchedulingCollabBridge
-
     registry = {
-        "scheduling": scheduling_cls,
+        "scheduling": SchedulingCollabBridge,
         "commitment": CommitmentCollabBridge,
         "kitting": KittingCollabBridge,
         "events": EventsCollabBridge,

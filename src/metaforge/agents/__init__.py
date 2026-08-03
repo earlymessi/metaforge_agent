@@ -1,3 +1,10 @@
-"""Agent runners — import submodules directly (e.g. agents.scheduling)."""
+"""Agent runners — import submodules / Bridge classes directly."""
 
-__all__ = ["SchedulingAgentRunner", "CommitmentAgentRunner"]
+__all__ = [
+    "SchedulingCollabBridge",
+    "CommitmentCollabBridge",
+    "EventsCollabBridge",
+    "KittingCollabBridge",
+    "WhatifCollabBridge",
+    "PlansCollabBridge",
+]

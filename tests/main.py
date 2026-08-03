@@ -1958,7 +1958,7 @@ async def _hydrate_scheduling_agent_request(req: AgentRunRequest, areq):
 
 @app.post("/api/agents/scheduling/run")
 async def agents_scheduling_run(req: AgentRunRequest):
-    from metaforge.agents.scheduling import SchedulingAgentRunner
+    from metaforge.orchestrator.router import get_agent
     from metaforge.services.persist_store import confirm_and_persist
 
     params = dict(req.params or {})
@@ -1980,7 +1980,7 @@ async def agents_scheduling_run(req: AgentRunRequest):
     req.params = params
     areq = _agent_request_from_body(req)
     areq = await _hydrate_scheduling_agent_request(req, areq)
-    agent = SchedulingAgentRunner()
+    agent = get_agent("scheduling")
     return agent.run(areq).to_dict()
 
 

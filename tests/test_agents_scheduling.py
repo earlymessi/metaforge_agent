@@ -1,36 +1,47 @@
-"""scheduling Agent 测试。"""
+"""scheduling Agent 测试（collab 主路径）。"""
 
-from metaforge.agents.scheduling import SchedulingAgentRunner
 from metaforge.agents.base import AgentRequest
-from metaforge.problems.jobshop import Job, JobShopProblem, Task
-from metaforge.tools.load_all import load_all_tools
+from metaforge.agents.scheduling_collab_bridge import SchedulingCollabBridge
+from metaforge.orchestrator.router import get_agent
 
 
-def setup_module():
-    load_all_tools()
+def test_get_agent_scheduling_returns_collab_bridge():
+    assert isinstance(get_agent("scheduling"), SchedulingCollabBridge)
 
 
-def test_scheduling_agent_parse_only_plan():
-    agent = SchedulingAgentRunner()
-    req = AgentRequest(
-        message="禁忌搜索，交付优先",
-        params={"skip_parse": False},
+def test_scheduling_bridge_build_plan_is_collab_step():
+    agent = SchedulingCollabBridge()
+    steps = agent.build_plan(AgentRequest(message="禁忌搜索，交付优先"))
+    assert agent._plan_planner == "planning_collab"
+    assert [s.tool for s in steps] == ["planning.collab.run"]
+
+
+def test_scheduling_bridge_run_with_jobs(monkeypatch):
+    def fake_collab(**kwargs):
+        assert kwargs.get("jobs")
+        return {
+            "status": "COMPLETED",
+            "run_id": "r1",
+            "package": {"recommended_schedule_id": "spt"},
+            "artifacts": {},
+        }
+
+    monkeypatch.setattr(
+        "metaforge.agents.scheduling_collab_bridge.run_collab", fake_collab
     )
-    steps = agent.build_plan(req)
-    assert len(steps) == 2
-    assert steps[0].tool == "scheduling.parse_intent"
-
-
-def test_scheduling_agent_run_with_problem():
-    jobs = [Job(tasks=[Task(machine_id=0, duration=2, id=0)], id=0)]
-    problem = JobShopProblem(jobs, instance_name="agent")
-    agent = SchedulingAgentRunner()
-    req = AgentRequest(
-        params={"skip_parse": True, "solvers": ["spt"]},
-        context={
-            "extras": {"problem": problem},
-        },
+    agent = SchedulingCollabBridge()
+    resp = agent.run(
+        AgentRequest(
+            message="综合平衡",
+            context={
+                "custom_data": [
+                    {
+                        "name": "A",
+                        "tasks": [{"machine_id": 0, "duration": 2}],
+                    }
+                ]
+            },
+        )
     )
-    resp = agent.run(req)
     assert resp.status == "success"
-    assert "spt" in resp.artifacts.get("schedule_results", {})
+    assert resp.plan_planner == "planning_collab"

@@ -1,7 +1,7 @@
 """scheduling Plan 纠偏单测（不调用 GLM）。"""
 
 from metaforge.agents.base import AgentRequest, PlanStep
-from metaforge.agents.scheduling import coerce_scheduling_plan_steps
+from metaforge.scheduling.plan_coerce import coerce_scheduling_plan_steps
 
 
 def test_coerce_compare_algorithms_from_list_catalog():
