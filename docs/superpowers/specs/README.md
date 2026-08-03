@@ -8,8 +8,10 @@
 | [2026-05-29-scheduling-agent-upgrade-design.md](2026-05-29-scheduling-agent-upgrade-design.md) | 排程 Agent 升级 |
 | [2026-07-31-metaforge-agent-harness-platform-design.md](2026-07-31-metaforge-agent-harness-platform-design.md) | Agent Harness 平台化（历史/待审） |
 | [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) | **参数化 SchedulingStrategy（S1 已闭环）** |
-| [2026-08-03-planning-collab-multiagent-design.md](2026-08-03-planning-collab-multiagent-design.md) | **S2 Planning Collab Multi-Agent（待审）** |
+| [2026-08-03-planning-collab-multiagent-design.md](2026-08-03-planning-collab-multiagent-design.md) | **S2 Planning Collab Multi-Agent（已闭环）** |
+| [2026-08-03-planning-frontend-modes-design.md](2026-08-03-planning-frontend-modes-design.md) | **S3 前端三模式 + Package 结果页（待审）** |
 
 **现行能力与 API** 以 [`../../智能体功能清单.md`](../../智能体功能清单.md) 为准。  
 **S1** 以 [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) 为准。  
-**S2** 以 [2026-08-03-planning-collab-multiagent-design.md](2026-08-03-planning-collab-multiagent-design.md) 为准。
+**S2** 以 [2026-08-03-planning-collab-multiagent-design.md](2026-08-03-planning-collab-multiagent-design.md) 为准。  
+**S3** 以 [2026-08-03-planning-frontend-modes-design.md](2026-08-03-planning-frontend-modes-design.md) 为准。
