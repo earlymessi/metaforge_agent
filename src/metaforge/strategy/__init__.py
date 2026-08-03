@@ -16,6 +16,7 @@ from metaforge.strategy.evaluator import evaluate_candidates
 from metaforge.strategy.run_state import create_run, get_run, update_run
 from metaforge.strategy.hitl import approve_strategy, edit_and_approve, reject_strategy
 from metaforge.strategy.pipeline import resume_planning, run_planning, solve_candidates
+from metaforge.strategy.problem_resolve import resolve_planning_problem
 from metaforge.strategy.trace import build_strategy_trace
 
 __all__ = [
@@ -44,5 +45,6 @@ __all__ = [
     "run_planning",
     "resume_planning",
     "solve_candidates",
+    "resolve_planning_problem",
     "build_strategy_trace",
 ]

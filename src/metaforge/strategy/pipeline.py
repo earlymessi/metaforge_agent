@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from metaforge.strategy.adapters import strategy_to_solver_inputs
 from metaforge.strategy.evaluator import evaluate_candidates
 from metaforge.strategy.generator import generate_strategy
 from metaforge.strategy.models import SchedulingStrategy, SolverPolicy
+from metaforge.strategy.problem_resolve import (
+    enrich_completion_aliases,
+    resolve_planning_problem,
+)
 from metaforge.strategy.run_state import create_run, get_run, update_run
 from metaforge.strategy.solver_policy import build_solver_policy
 from metaforge.strategy.trace import build_strategy_trace
@@ -21,42 +25,102 @@ def _policy_to_dict(policy: SolverPolicy) -> Dict[str, Any]:
     }
 
 
+def _completion_from_gantt(gantt: List[Dict[str, Any]]) -> Dict[str, float]:
+    completion: Dict[str, float] = {}
+    for op in gantt or []:
+        if not isinstance(op, dict):
+            continue
+        jid = op.get("job_id", op.get("job"))
+        if jid is None:
+            continue
+        end = op.get("end", op.get("finish"))
+        if end is None:
+            continue
+        key = str(jid)
+        completion[key] = max(completion.get(key, 0.0), float(end))
+    return completion
+
+
+def _solve_one(
+    solver_id: str,
+    problem: Any,
+    *,
+    weights: Dict[str, float],
+    resource_config: Optional[Dict[str, Any]],
+    solver_params: Any,
+    job_aliases: Optional[Dict[str, List[str]]],
+) -> Dict[str, Any]:
+    from metaforge.utils.compare_solvers import run_single_solver
+
+    sr = run_single_solver(
+        solver_id,
+        problem,
+        weights=weights,
+        resource_config=resource_config,
+        solver_params=solver_params,
+    )
+    gantt = list(sr.gantt_data or [])
+    completion = enrich_completion_aliases(_completion_from_gantt(gantt), job_aliases)
+    return {
+        "schedule_id": sr.solver_id,
+        "solver": sr.solver_id,
+        "metrics": dict(sr.metrics or {}),
+        "gantt_data": gantt,
+        "completion_by_job": completion,
+        "composite_score": getattr(sr, "composite_score", None),
+    }
+
+
 def _solve_candidates_internal(
     strategy: SchedulingStrategy,
     problem: Any,
     policy: SolverPolicy,
+    *,
+    job_aliases: Optional[Dict[str, List[str]]] = None,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     if problem is None:
         return [], []
-
-    from metaforge.utils.compare_solvers import run_single_solver
 
     weights, hints = strategy_to_solver_inputs(strategy)
     resource_config = hints.get("resource_config_patch")
 
     candidates: List[Dict[str, Any]] = []
     failed: List[Dict[str, Any]] = []
+    tried: List[str] = []
 
     for solver_id in policy.primary_solvers:
+        tried.append(solver_id)
         params = (policy.parameters or {}).get(solver_id)
         try:
-            sr = run_single_solver(
-                solver_id,
-                problem,
-                weights=weights,
-                resource_config=resource_config,
-                solver_params=params,
-            )
             candidates.append(
-                {
-                    "schedule_id": sr.solver_id,
-                    "solver": sr.solver_id,
-                    "metrics": dict(sr.metrics or {}),
-                    "gantt_data": list(sr.gantt_data or []),
-                }
+                _solve_one(
+                    solver_id,
+                    problem,
+                    weights=weights,
+                    resource_config=resource_config,
+                    solver_params=params,
+                    job_aliases=job_aliases,
+                )
             )
-        except Exception as exc:  # noqa: BLE001 - continue other solvers
+        except Exception as exc:  # noqa: BLE001
             failed.append({"solver": solver_id, "error": str(exc)})
+
+    # Fallback when no successful primary candidate
+    fb = policy.fallback_solver
+    if not candidates and fb and fb not in tried:
+        try:
+            candidates.append(
+                _solve_one(
+                    fb,
+                    problem,
+                    weights=weights,
+                    resource_config=resource_config,
+                    solver_params=(policy.parameters or {}).get(fb),
+                    job_aliases=job_aliases,
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            failed.append({"solver": fb, "error": str(exc), "role": "fallback"})
 
     return candidates, failed
 
@@ -66,7 +130,7 @@ def solve_candidates(
     problem: Any,
     policy: SolverPolicy,
 ) -> List[Dict[str, Any]]:
-    """Run primary solvers; return [] when problem is None."""
+    """Run primary solvers (+ fallback if needed); return [] when problem is None."""
     candidates, _ = _solve_candidates_internal(strategy, problem, policy)
     return candidates
 
@@ -82,13 +146,28 @@ def _finish_planning(
     if run is None:
         raise KeyError(f"run not found: {run_id!r}")
 
+    weights, hints = strategy_to_solver_inputs(strategy)
+    resolved, problem_meta = resolve_planning_problem(
+        jobs,
+        problem=problem,
+        resource_config=hints.get("resource_config_patch"),
+    )
+
+    warnings = list(run.get("warnings") or [])
+    warnings.extend(problem_meta.get("warnings") or [])
+    if resolved is None:
+        warnings.append("no solvable problem; returning empty recommendation")
+
     policy = build_solver_policy(strategy, n_jobs=len(list(jobs or [])))
     policy_dict = _policy_to_dict(policy)
 
-    candidates, failed_solvers = _solve_candidates_internal(strategy, problem, policy)
+    candidates, failed_solvers = _solve_candidates_internal(
+        strategy,
+        resolved,
+        policy,
+        job_aliases=problem_meta.get("job_aliases"),
+    )
     evaluation = evaluate_candidates(strategy, candidates, jobs=jobs)
-
-    warnings = list(run.get("warnings") or [])
     warnings.extend(evaluation.get("warnings") or [])
 
     package = {
@@ -96,6 +175,10 @@ def _finish_planning(
         "evaluation": evaluation,
         "failed_solvers": failed_solvers,
         "strategy": strategy.to_dict(),
+        "problem_meta": {
+            "built_from_jobs": problem_meta.get("built_from_jobs"),
+            "job_name_map": problem_meta.get("job_name_map"),
+        },
     }
 
     run = update_run(
