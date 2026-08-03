@@ -12,6 +12,7 @@ from metaforge.strategy.capability_matrix import get_capability
 from metaforge.strategy.models import Constraint, SchedulingStrategy, SolverPolicy
 from metaforge.strategy.solver_policy import build_solver_policy
 from metaforge.strategy.presets import list_presets, strategy_from_preset
+from metaforge.strategy.evaluator import evaluate_candidates
 
 __all__ = [
     "Constraint",
@@ -29,4 +30,5 @@ __all__ = [
     "list_presets",
     "strategy_from_preset",
     "validate_strategy",
+    "evaluate_candidates",
 ]
