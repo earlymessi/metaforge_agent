@@ -1,7 +1,7 @@
 /** 解析/补全影响评估报告（兼容 Agent 的 impact_summary 嵌套结构）。 */
 
-import { deferInsertToTailGantt } from './ganttInsertDefer'
-import { propagateBreakdownOnGantt } from './ganttPropagate'
+import { deferInsertToTailGantt } from './ganttInsertDefer.js'
+import { propagateBreakdownOnGantt } from './ganttPropagate.js'
 
 export const DUAL_GANTT_EVENT_TYPES = ['insert_order', 'machine_breakdown', 'due_date_change']
 

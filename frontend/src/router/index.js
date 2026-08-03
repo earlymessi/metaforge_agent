@@ -11,6 +11,7 @@ import StaffingView from '../views/StaffingView.vue'
 import MaterialsView from '../views/MaterialsView.vue'
 import HealthView from '../views/HealthView.vue'
 import AgentChatView from '../views/AgentChatView.vue'
+import CompareView from '../views/CompareView.vue'
 
 export default createRouter({
   history: createWebHistory('/new-ui'),
@@ -25,6 +26,7 @@ export default createRouter({
         { path: 'aps', component: APSView },
         { path: 'assistant', component: AgentChatView },
         { path: 'reports', component: AnalysisView },
+        { path: 'compare', component: CompareView },
         { path: 'energy', component: EnergyView },
         { path: 'health', component: HealthView },
         { path: 'logistics', component: LogisticsView },

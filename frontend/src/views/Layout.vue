@@ -29,6 +29,10 @@
             <el-icon><DataAnalysis /></el-icon>
             <span>分析报表</span>
           </el-menu-item>
+          <el-menu-item index="/compare" class="nav-item">
+            <el-icon><Histogram /></el-icon>
+            <span>方案对比</span>
+          </el-menu-item>
 
           <div class="nav-header">资源管控</div>
           <el-menu-item index="/energy" class="nav-item">
@@ -106,7 +110,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { DataAnalysis, Lightning, FolderOpened, Monitor, Van, User, Box, FirstAidKit, Fold, Clock, Calendar, ChatDotRound } from '@element-plus/icons-vue'
+import { DataAnalysis, Lightning, FolderOpened, Monitor, Van, User, Box, FirstAidKit, Fold, Clock, Calendar, ChatDotRound, Histogram } from '@element-plus/icons-vue'
 import AgentChatPanel from '../components/AgentChatPanel.vue'
 import { useAssistantStore } from '../stores/useAssistantStore'
 
@@ -121,6 +125,7 @@ const routeTitle = computed(() => {
     '/aps': '智能排程',
     '/assistant': '智能助手',
     '/reports': '分析报表',
+    '/compare': '方案对比',
     '/energy': '能耗管控调度',
     '/health': '设备健康管控',
     '/logistics': 'AGV物流调度',

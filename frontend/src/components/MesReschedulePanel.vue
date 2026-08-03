@@ -443,6 +443,19 @@ function goReports() {
   router.push('/reports')
 }
 
+function goCompare() {
+  const ir = impactIr.value
+  if (ir) {
+    try {
+      sessionStorage.setItem('metaforge_last_impact', JSON.stringify(ir))
+    } catch {
+      /* ignore */
+    }
+  }
+  impactDialogVisible.value = false
+  router.push('/compare')
+}
+
 function riskLabel(level) {
   const map = { on_time: '按期', low: '低风险', medium: '中风险', high: '高风险', critical: '严重', unknown: '未设交期' }
   return map[level] || level
@@ -645,6 +658,7 @@ defineExpose({ openImpactDialog: openImpactAssessment })
       </template>
       <template #footer>
         <el-button @click="impactDialogVisible = false">关闭</el-button>
+        <el-button type="success" plain @click="goCompare">打开对比页</el-button>
         <el-button type="primary" plain @click="goReports">打开报表分析</el-button>
       </template>
     </el-dialog>
