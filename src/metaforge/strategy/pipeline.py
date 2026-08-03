@@ -6,6 +6,7 @@ from metaforge.strategy.adapters import strategy_to_solver_inputs
 from metaforge.strategy.evaluator import evaluate_candidates
 from metaforge.strategy.generator import generate_strategy
 from metaforge.strategy.models import SchedulingStrategy, SolverPolicy
+from metaforge.strategy.presets import strategy_from_preset
 from metaforge.strategy.problem_resolve import (
     enrich_completion_aliases,
     resolve_planning_problem,
@@ -212,6 +213,8 @@ def run_planning(
     order_analysis: Any = None,
     constraint_analysis: Any = None,
     resource_analysis: Any = None,
+    preset_id: Optional[str] = None,
+    strategy: Any = None,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     run = create_run(
@@ -222,18 +225,40 @@ def run_planning(
         status="RUNNING",
     )
 
-    strategy, gen_meta = generate_strategy(
-        user_goal=user_goal,
-        jobs=jobs,
-        machines=machines,
-        llm_client=llm_client,
-        workers=workers,
-        tools=tools,
-        allow_simulated=allow_simulated,
-        order_analysis=order_analysis,
-        constraint_analysis=constraint_analysis,
-        resource_analysis=resource_analysis,
-    )
+    if strategy is not None:
+        if isinstance(strategy, SchedulingStrategy):
+            pass
+        elif isinstance(strategy, dict):
+            strategy = SchedulingStrategy.from_dict(strategy)
+        else:
+            raise ValueError(
+                f"strategy must be SchedulingStrategy or dict, got {type(strategy)!r}"
+            )
+        gen_meta = {
+            "generated_by": strategy.generated_by,
+            "fallback": False,
+            "source": "strategy",
+        }
+    elif preset_id:
+        strategy = strategy_from_preset(preset_id)
+        gen_meta = {
+            "generated_by": "preset",
+            "preset_id": preset_id,
+            "fallback": False,
+        }
+    else:
+        strategy, gen_meta = generate_strategy(
+            user_goal=user_goal,
+            jobs=jobs,
+            machines=machines,
+            llm_client=llm_client,
+            workers=workers,
+            tools=tools,
+            allow_simulated=allow_simulated,
+            order_analysis=order_analysis,
+            constraint_analysis=constraint_analysis,
+            resource_analysis=resource_analysis,
+        )
 
     warnings = list(run.get("warnings") or [])
     if gen_meta.get("fallback"):

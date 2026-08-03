@@ -2210,17 +2210,22 @@ async def planning_run(body: Dict[str, Any] = Body(...)):
     _require_planning()
     from metaforge.strategy.pipeline import run_planning
 
-    return run_planning(
-        user_goal=body.get("user_goal") or "",
-        jobs=body.get("jobs") or [],
-        machines=body.get("machines") or [],
-        skip_strategy_hitl=bool(body.get("skip_strategy_hitl", False)),
-        llm_client=body.get("llm_client"),
-        problem=body.get("problem"),
-        workers=body.get("workers"),
-        tools=body.get("tools"),
-        allow_simulated=body.get("allow_simulated", True),
-    )
+    try:
+        return run_planning(
+            user_goal=body.get("user_goal") or "",
+            jobs=body.get("jobs") or [],
+            machines=body.get("machines") or [],
+            skip_strategy_hitl=bool(body.get("skip_strategy_hitl", False)),
+            llm_client=body.get("llm_client"),
+            problem=body.get("problem"),
+            workers=body.get("workers"),
+            tools=body.get("tools"),
+            allow_simulated=body.get("allow_simulated", True),
+            preset_id=body.get("preset_id"),
+            strategy=body.get("strategy"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/planning/collab/analyze")
