@@ -90,6 +90,17 @@
       </div>
       <p v-else class="pkg-muted">无</p>
     </div>
+
+    <div class="pkg-actions">
+      <el-button
+        type="primary"
+        :disabled="!result?.hasRecommendation || sending"
+        :loading="sending"
+        @click="emit('send-to-sim')"
+      >
+        送入执行仿真
+      </el-button>
+    </div>
   </div>
 </template>
 
@@ -101,7 +112,13 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  sending: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['send-to-sim'])
 
 const MAX_VIOLATIONS = 8
 
@@ -236,5 +253,9 @@ function formatOtherMetrics(metrics) {
   margin: 0;
   font-size: 12px;
   color: var(--el-text-color-secondary);
+}
+
+.pkg-actions {
+  margin-top: 4px;
 }
 </style>

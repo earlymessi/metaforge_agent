@@ -71,13 +71,18 @@
 
     <div v-if="packageView" class="wb-result">
       <div class="ops-label">Package 结果</div>
-      <PackageResultPanel :result="packageView" />
+      <PackageResultPanel
+        :result="packageView"
+        :sending="sendingToSim"
+        @send-to-sim="onSendToSim"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api/client'
 import { extractPackageView } from './packageExtract.js'
@@ -106,16 +111,19 @@ const props = defineProps({
   },
 })
 
+const router = useRouter()
 const activeTab = ref('template')
 const runId = ref('')
 const runStatus = ref('')
 const hitlLoading = ref(false)
 const running = ref(false)
+const sendingToSim = ref(false)
 const packageView = ref(null)
 const strategyDraftJson = ref('')
 const analyses = ref(null)
 const validateErrors = ref([])
 const draftOpen = ref(['draft'])
+const lastRunPayload = ref(null)
 
 function formatError(err) {
   if (err == null) return '—'
@@ -138,6 +146,7 @@ function requireJobs() {
 
 function applyRunResponse(data, { successMsg } = {}) {
   if (!data) return
+  lastRunPayload.value = data
   runId.value = data.run_id || runId.value
   runStatus.value = data.status || ''
   if (data.artifacts) {
@@ -164,6 +173,34 @@ function applyRunResponse(data, { successMsg } = {}) {
   } else if (data.status === 'FAILED') {
     packageView.value = null
     ElMessage.error(data.error || '排产运行失败')
+  }
+}
+
+async function onSendToSim() {
+  if (!packageView.value?.hasRecommendation) {
+    ElMessage.warning('请先完成排产并获得推荐方案')
+    return
+  }
+  sendingToSim.value = true
+  try {
+    const payload = {
+      run_id: runId.value || undefined,
+      package: lastRunPayload.value?.package || {
+        recommended_schedule_id: packageView.value.recommended_schedule_id,
+      },
+      candidates: lastRunPayload.value?.candidate_schedules || packageView.value.candidates,
+      jobs: props.jobs,
+      persist_plan: true,
+      plan_name: 'Package 推荐计划',
+      sim_speed: 60,
+    }
+    await api.post('/api/execution/start_from_package', payload)
+    ElMessage.success('已送入执行仿真')
+    await router.push({ path: '/dashboard', query: { from_package: '1' } })
+  } catch (e) {
+    ElMessage.error(`送入仿真失败: ${e?.response?.data?.detail || e?.message || e}`)
+  } finally {
+    sendingToSim.value = false
   }
 }
 

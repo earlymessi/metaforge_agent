@@ -219,6 +219,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { api } from '../api/client'
 import MesReschedulePanel from '../components/MesReschedulePanel.vue'
@@ -237,6 +238,8 @@ import { buildMachinesFromGantt } from '../utils/digitalTwinFromGantt'
 
 const store = useResultsStore()
 const workContext = useWorkContextStore()
+const route = useRoute()
+const router = useRouter()
 
 const stats = ref({})
 const layoutMachines = ref([])
@@ -598,8 +601,26 @@ onMounted(async () => {
   await loadPlans()
   await fetchLayout()
   await refreshAll()
+  if (route.query.from_package === '1') {
+    await loadPlans()
+    await refreshAll()
+    if (execution.value?.status && execution.value.status !== 'idle') {
+      ElMessage.success('已加载 Package 执行仿真')
+    }
+    router.replace({ path: '/dashboard', query: {} })
+  }
   timer = setInterval(refreshAll, 2000)
 })
+
+watch(
+  () => route.query.from_package,
+  async (v) => {
+    if (v !== '1') return
+    await loadPlans()
+    await refreshAll()
+    router.replace({ path: '/dashboard', query: {} })
+  },
+)
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
