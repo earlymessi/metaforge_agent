@@ -811,7 +811,100 @@ async def execution_start_from_package(body: Dict = Body(...)):
             candidates=body.get("candidates") or body.get("candidate_schedules"),
         )
     except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/scenarios/presets")
+async def scenarios_presets():
+    from metaforge.scenario.presets import list_preset_scenarios
+
+    return {"items": list_preset_scenarios()}
+
+
+@app.get("/api/scenarios")
+async def scenarios_list():
+    from metaforge.scenario.store import default_store
+
+    return {"items": default_store.list()}
+
+
+@app.post("/api/scenarios")
+async def scenarios_create(body: Dict = Body(...)):
+    from metaforge.scenario.store import default_store
+
+    try:
+        return default_store.create(body)
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.get("/api/scenarios/{scenario_id}")
+async def scenarios_get(scenario_id: str):
+    from metaforge.scenario.store import default_store
+
+    item = default_store.get(scenario_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="scenario not found")
+    return item
+
+
+@app.put("/api/scenarios/{scenario_id}")
+async def scenarios_update(scenario_id: str, body: Dict = Body(...)):
+    from metaforge.scenario.store import default_store
+
+    try:
+        return default_store.update(scenario_id, body)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="scenario not found") from None
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.delete("/api/scenarios/{scenario_id}")
+async def scenarios_delete(scenario_id: str):
+    from metaforge.scenario.store import default_store
+
+    if not default_store.delete(scenario_id):
+        raise HTTPException(status_code=404, detail="scenario not found")
+    return {"ok": True}
+
+
+@app.post("/api/scenarios/{scenario_id}/run")
+async def scenarios_run(scenario_id: str, body: Dict = Body(default={})):
+    """Run a saved scenario against current MES execution context."""
+    from metaforge.scenario.store import default_store
+    from metaforge.scenario.runner import run_scenario_async
+    from metaforge.services.production_execution import get_state, tick_sim_time
+
+    scenario = default_store.get(scenario_id)
+    if not scenario:
+        raise HTTPException(status_code=404, detail="scenario not found")
+
+    exec_doc = await get_state(execution_collection)
+    if exec_doc.get("status") in ("running", "paused"):
+        exec_doc = await tick_sim_time(execution_collection, exec_doc)
+
+    base_jobs = body.get("base_jobs") or exec_doc.get("jobs_snapshot") or []
+    if not base_jobs:
+        raise HTTPException(status_code=400, detail="base_jobs required (or start execution first)")
+
+    envelope: Dict[str, Any] = {
+        "base_jobs": base_jobs,
+        "reschedule_options": {
+            "solvers": body.get("solvers"),
+            "weights": body.get("weights"),
+            "random_seed": body.get("random_seed"),
+            "baseline_gantt": exec_doc.get("baseline_gantt"),
+            "baseline_solver": exec_doc.get("baseline_solver"),
+        },
+        "production_execution": exec_doc if exec_doc.get("status") in ("running", "paused") else None,
+    }
+
+    return await run_scenario_async(
+        scenario,
+        envelope=envelope,
+        dispatch=_event_dispatch_from_request,
+    )
 
 
 @app.post("/api/execution/pause")
