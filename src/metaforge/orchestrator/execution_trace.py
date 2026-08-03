@@ -247,3 +247,10 @@ def merge_run_trace(
     out = list(preview_trace)
     out.append(build_execution_trace(plan_log))
     return out
+
+
+def build_strategy_trace_block(run: Dict[str, Any]) -> Dict[str, Any]:
+    """Thin wrapper: planning run → SSE-mergeable strategy trace block."""
+    from metaforge.strategy.trace import build_strategy_trace
+
+    return build_strategy_trace(run)
