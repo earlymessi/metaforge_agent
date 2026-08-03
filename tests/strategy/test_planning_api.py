@@ -46,3 +46,22 @@ def test_planning_run_skip_hitl(client, monkeypatch):
     assert r.status_code in (200, 202)
     body = r.json()
     assert body.get("run_id") or body.get("package")
+
+
+def test_planning_run_preset_id(client, monkeypatch):
+    def fake_run_planning(**kwargs):
+        assert kwargs.get("preset_id") == "delivery"
+        return {"status": "COMPLETED", "run_id": "r1", "package": {"recommended_schedule_id": "ts"}}
+
+    monkeypatch.setattr("metaforge.strategy.pipeline.run_planning", fake_run_planning)
+    r = client.post(
+        "/api/planning/run",
+        json={
+            "preset_id": "delivery",
+            "jobs": [{"job_id": "J1"}],
+            "machines": ["M01"],
+            "skip_strategy_hitl": True,
+        },
+    )
+    assert r.status_code == 200
+    assert r.json()["package"]["recommended_schedule_id"] == "ts"
