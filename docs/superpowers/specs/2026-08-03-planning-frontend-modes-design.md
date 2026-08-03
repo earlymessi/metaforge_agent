@@ -2,7 +2,7 @@
 
 > 状态：已批准（头脑风暴 2026-08-03）  
 > 前置：S1 参数化策略 ✅、S2 Planning Collab ✅  
-> 实现计划：待 `writing-plans` 产出
+> 实现计划：[`docs/superpowers/plans/2026-08-03-planning-frontend-modes.md`](../plans/2026-08-03-planning-frontend-modes.md)
 
 ---
 
