@@ -16,6 +16,23 @@ from metaforge.strategy.solver_policy import build_solver_policy
 from metaforge.strategy.trace import build_strategy_trace
 
 
+def _apply_primary_solvers(strategy: SchedulingStrategy, primary_solvers: Any) -> SchedulingStrategy:
+    """Override strategy.solver_preferences with UI-selected solvers."""
+    if not primary_solvers:
+        return strategy
+    if isinstance(primary_solvers, str):
+        names = [primary_solvers]
+    else:
+        names = [str(x).strip() for x in primary_solvers if str(x).strip()]
+    if not names:
+        return strategy
+    prefs = dict(strategy.solver_preferences or {})
+    prefs["primary_solvers"] = names
+    prefs["max_candidates"] = max(len(names), int(prefs.get("max_candidates") or 0) or len(names))
+    strategy.solver_preferences = prefs
+    return strategy
+
+
 def _policy_to_dict(policy: SolverPolicy) -> Dict[str, Any]:
     return {
         "primary_solvers": list(policy.primary_solvers),
@@ -215,6 +232,7 @@ def run_planning(
     resource_analysis: Any = None,
     preset_id: Optional[str] = None,
     strategy: Any = None,
+    primary_solvers: Any = None,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     run = create_run(
@@ -259,6 +277,10 @@ def run_planning(
             constraint_analysis=constraint_analysis,
             resource_analysis=resource_analysis,
         )
+
+    # UI 勾选算法覆盖策略默认 primary（与 APS「开始排程」同一套）
+    solvers = primary_solvers if primary_solvers is not None else kwargs.get("solvers")
+    strategy = _apply_primary_solvers(strategy, solvers)
 
     warnings = list(run.get("warnings") or [])
     if gen_meta.get("fallback"):

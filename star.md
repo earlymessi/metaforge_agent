@@ -1,116 +1,190 @@
-# MetaForge 交付运行手册（FastAPI + MongoDB）
+# MetaForge 交付运行手册（当前版）
 
-本文档用于交付环境的**快速上手与运行**，按步骤执行即可在本机启动 `tests/main.py` 提供的 **MetaForge MES（后端 FastAPI + MongoDB + 静态前端页面）**。
+按本文在本机启动 **MetaForge MES**：`tests/main.py`（FastAPI + MongoDB）托管 Vue3 前端。
+
+> 默认地址：**`http://127.0.0.1:8008/go`**（会清掉旧 HTML 缓存并进入看板）  
+> 日常入口：**`http://127.0.0.1:8008/new-ui/dashboard`**  
+> 若「一打开还是旧页、刷新才变新」：先打开一次 `/go`，或浏览器里清除 `127.0.0.1:8008` 的网站数据。  
+> 端口以代码为准：`METAFORGE_PORT` 默认 **8008**（`tests/main.py`）。README 里若仍写 8000，以本文与代码为准。
+
+---
+
+## 0. 一键启动（日常）
+
+仓库根目录双击 **`start.bat`**，或在 PowerShell 执行：
+
+```powershell
+.\scripts\start_metaforge.ps1
+```
+
+脚本会：启动 MongoDB → 清理旧后端端口 →（缺 dist 时）构建前端 → 启动 `tests/main.py` → 自动打开浏览器。
+
+常用参数：
+
+```powershell
+.\scripts\start_metaforge.ps1 -Rebuild    # 强制重编前端
+.\scripts\start_metaforge.ps1 -Install    # 顺带 pip install -e . 与 npm install
+.\scripts\start_metaforge.ps1 -NoBrowser  # 不自动开浏览器
+```
+
+等价手工步骤（对照）：
+
+```powershell
+# 1) MongoDB
+Start-Service MongoDB
+
+# 2) 后端依赖（首次或依赖变更后）
+pip install -e .
+
+# 3) 前端构建（首次或 frontend/ 有改动后）
+cd .\frontend
+npm install
+npm run build
+cd ..
+
+# 4) 启动后端（会加载根目录 .env）
+cd .\tests
+python .\main.py
+```
+
+浏览器打开：
+
+- **推荐（防旧缓存）**：http://127.0.0.1:8008/go
+- 生产看板：http://127.0.0.1:8008/new-ui/dashboard
+- 智能助手：http://127.0.0.1:8008/new-ui/assistant
+- APS 排程：http://127.0.0.1:8008/new-ui/aps
+
+启动成功时终端大致会出现：
+
+```text
+[OK] MongoDB 已连接: url=..., db=...
+MetaForge Backend (FastAPI+Motor) running on http://127.0.0.1:8008
+  统一入口: http://127.0.0.1:8008/go  →  /new-ui/dashboard
+```
+
+---
+
+## 0.1 给别人演示（约 8～12 分钟）
+
+**开场一句话：** MetaForge 把「排产 → AI 策略选方案 → 送入车间执行 → 异常自然语言重排」串在一条链路上。
+
+### 演示前检查（1 分钟）
+
+1. 双击 `start.bat` 或执行 `.\scripts\start_metaforge.ps1`
+2. 浏览器打开 http://127.0.0.1:8008/go （首次务必用 `/go`，避免旧缓存）
+3. 右侧「对比算法」至少勾选 **SPT、TS、GA、SA**（可再勾几个）
+4. 若配置了 `.env` 里的 `ZHIPU_API_KEY`，助手/解析会更自然；没有也能规则跑通
+
+### 主线剧本（建议按序）
+
+| 步 | 页面 | 你做什么 | 你怎么讲 |
+|----|------|----------|----------|
+| 1 | APS → 自定义 | 点「加载示例」→「保存计划」 | 这是带交期/数量/BOM 的演示工单池，不是空模板 |
+| 2 | APS 右侧 AI策略 | 粘贴话术：「交付优先，保证急单-钢架焊接按期，总完工尽量快」→「AI 协同排产运行」 | AI 先做订单/约束/资源三分析，再用你勾选的算法对比，综合得分**越低越好**；完成后会提示已同步到**分析报表 / 物料 / 能耗** |
+| 3 | 结果区 / 报表 | 指候选表：排名 / 硬约束 / 对比结论；可先打开「分析报表」看多算法对比，再点「送入执行仿真」 | 推荐方案会生成代号计划（如 `PKG-…-TS`），并跳到看板开跑；**不必再点「开始排程计算」** |
+| 4 | 生产看板 | 看甘特在走；可调仿真倍速 | 这是 MES 在线执行，不是静态报表 |
+| 5 | 智能助手 | 输入：「3号机坏了4小时，帮我重排」 | 自然语言 → 故障解析 → R0/R1/R2：原计划 / 不重排推延 / 冻结后重排 |
+| 6 | 影响弹窗 / 落库 | 打开 R0·R1·R2 表与甘特；若弹出确认落库，看三场景对比再点确认 | 强调：**R1 应变差、R2 应尽量救回来**；落库写的是 R2 |
+
+### 备用话术（可直接念）
+
+- AI 策略：`交付优先，保证急单-钢架焊接和急单-注塑罩壳按期，减少换型。`
+- 故障重排：`3号机坏了4小时，帮我重排`
+- 插单（可选）：`紧急插单，优先100，3号机5小时`
+
+### 演示避坑
+
+- 第一次页面还是旧的 → 打开一次 `/go` 或 Ctrl+F5
+- AI 策略「无合法推荐」→ 先「加载示例」（工单必须有交期）
+- AI 跑完后报表/资源仍空 → 确认提示「已同步 N 个算法方案…」，并 Ctrl+F5；勿再误以为必须点「开始排程计算」
+- 落库弹窗里算法是 SPT/TS → 那是**本次执行基准算法**，不是又竞选了一遍
+- 时间不够 → 跳过步骤 3 送仿真，直接在助手做故障重排（需看板已有执行基准；否则先完成 1～3）
 
 ---
 
 ## 1. 环境要求
 
-- **操作系统**：Windows 10/11（或 Windows Server，支持 PowerShell）
-- **Python**：3.10+（建议 3.10 / 3.11 / 3.12）
-- **MongoDB**：本机安装为 Windows 服务，默认端口 `27017`
-- **Node.js**（仅构建前端时需要）：建议 18+
+| 项 | 要求 |
+|----|------|
+| OS | Windows 10/11（PowerShell） |
+| Python | **3.10+**（建议 3.10 / 3.11 / 3.12） |
+| MongoDB | Windows 服务，默认端口 `27017` |
+| Node.js | 仅构建前端需要，建议 **18+** |
 
-> 本项目后端入口为 `tests/main.py`，默认监听 **`http://127.0.0.1:8008`**（可用环境变量 `METAFORGE_PORT` 修改）。
+可选：项目根目录 `.env`（已 gitignore）。`main.py` 启动时会自动 `load_dotenv`。
 
 ---
 
-## 2. 启动 MongoDB（必须）
-
-### 2.1 检查服务状态
+## 2. MongoDB
 
 ```powershell
 Get-Service -Name MongoDB
-```
-
-### 2.2 启动服务
-
-如果 `Status` 不是 `Running`：
-
-```powershell
+# 若未 Running：
 Start-Service MongoDB
-```
-
-### 2.3 验证端口监听
-
-```powershell
 Get-NetTCPConnection -LocalPort 27017 -State Listen
 ```
 
-看到 `LocalAddress 127.0.0.1` 且 `State Listen` 即表示 MongoDB 正常监听。
+默认连接：
 
----
-
-## 3. 配置数据库连接（可选）
-
-默认配置：
-
-- `MONGO_URL`: `mongodb://localhost:27017`
-- `MONGO_DB_NAME`: `metaforge_mes`
-
-修改示例：
+| 变量 | 默认 |
+|------|------|
+| `MONGO_URL` | `mongodb://localhost:27017` |
+| `MONGO_DB_NAME` | `metaforge_mes` |
 
 ```powershell
 $env:MONGO_URL="mongodb://127.0.0.1:27017"
 $env:MONGO_DB_NAME="metaforge_mes"
 ```
 
-> 带账号密码示例：`mongodb://user:pass@127.0.0.1:27017/?authSource=admin`
+带账号示例：`mongodb://user:pass@127.0.0.1:27017/?authSource=admin`
 
 ---
 
-## 4. 安装依赖（首次运行必须）
-
-进入项目根目录（含 `pyproject.toml`）：
-
-```powershell
-pip install -e .
-```
-
-会安装后端依赖：`fastapi`、`uvicorn`、`motor`、`pymongo` 等。
-
----
-
-## 5. 启动后端（FastAPI）
+## 3. 后端启动细节
 
 ```powershell
 cd .\tests
 python .\main.py
 ```
 
-正常启动会看到类似输出：
+说明：
 
-- `MetaForge Backend ... running on http://127.0.0.1:8008`
-- `MongoDB 已连接: ...`
+- 工作目录必须是 **`tests/`**（`uvicorn` 加载 `main:app`）。
+- 会优先把仓库 `src/` 加入 `sys.path`，避免装到 site-packages 的旧包盖住新代码。
+- 静态页：构建产物在 `tests/templates/dist/`，由后端托管；前端路由 base 为 **`/new-ui`**。
 
-改端口：
+### 常用启动环境变量
+
+| 变量 | 默认 | 说明 |
+|------|------|------|
+| `METAFORGE_HOST` | `127.0.0.1` | 监听地址 |
+| `METAFORGE_PORT` | `8008` | 监听端口 |
+| `METAFORGE_RELOAD` | `0` | `1` 开启 uvicorn reload（开发慎用，易残留进程） |
 
 ```powershell
 $env:METAFORGE_PORT="8080"
 python .\main.py
+# 访问 http://127.0.0.1:8080/new-ui/
 ```
 
+### 端口被占用
+
+```powershell
+# 仓库脚本（推荐）
+..\scripts\cleanup_backend.ps1
+# 或在仓库根目录：
+.\scripts\cleanup_backend.ps1
+```
+
+然后再 `python .\main.py`。也可改 `METAFORGE_PORT`。
+
 ---
 
-## 6. 访问系统
+## 4. 前端
 
-需先完成「前端构建」（见 6.1）：
+### 4.1 交付 / 日常（推荐）
 
-- **推荐**：`http://127.0.0.1:8008/new-ui/`（路由 base 为 `/new-ui`）
-- **根路径**：`http://127.0.0.1:8008/` — 同样返回构建后的 `index.html`
-
-若未构建前端，可能只看到 JSON：`{"message":"MetaForge Backend Running"}`。
-
----
-
-## 6.1 前端页面
-
-前端为 **Vite + Vue3 + Element Plus**，构建产物在 `tests/templates/dist/`，由 **8008 后端统一托管**。
-
-- **交付/日常（推荐）**：`npm run build` 后只启动 `python main.py`，访问 `http://127.0.0.1:8008/new-ui/`
-- **开发联调（可选）**：`npm run dev` → `http://127.0.0.1:5173/`（`/api` 代理到后端；**非必须**）
-
-### 前端构建（首次或前端改动后）
+只构建一次，由 **8008 后端托管**：
 
 ```powershell
 cd .\frontend
@@ -118,135 +192,124 @@ npm install
 npm run build
 ```
 
-产物：`tests/templates/dist/`。
+- 输出目录：`tests/templates/dist/`（`vite.config.js` 的 `outDir`）
+- 访问：`http://127.0.0.1:8008/new-ui/`（`/` 同样只托管该 dist，旧版 `templates/index.html` 已删除）
+- `index.html` 响应带 `Cache-Control: no-store`，避免浏览器把旧入口缓存成「第一次还是旧页」
 
-### 前端开发联调（可选）
+未构建时打开站点会返回 JSON：`{"error":"Frontend build not found. Run: cd frontend && npm run build"}`。
+
+### 4.2 开发热更新（可选）
 
 ```powershell
+# 终端 A：后端（8008）
+cd .\tests
+python .\main.py
+
+# 终端 B：Vite
 cd .\frontend
 npm run dev
 ```
 
+- 页面：http://127.0.0.1:5173/
+- `/api` 代理到 `http://127.0.0.1:8008`（可用 `VITE_API_PROXY` 覆盖）
+- **不是**交付必做步骤；交付只开 8008 即可。
+
 ---
 
-## 7. 当前能力速览（交付相关）
+## 5. 快速验收
 
-更完整说明见：
+后端起来后浏览器访问（应返回 JSON、无 500）：
 
-- [`docs/多智能体开发进度.md`](docs/多智能体开发进度.md)
-- [`docs/智能体功能清单.md`](docs/智能体功能清单.md)
-- 仓库根目录 [`README.md`](README.md)
+| 检查 | URL |
+|------|-----|
+| Benchmarks | http://127.0.0.1:8008/api/benchmarks |
+| 资源配置 | http://127.0.0.1:8008/api/resources/config |
+| Agent 注册表 | http://127.0.0.1:8008/api/agents/registry |
+| LLM 状态 | http://127.0.0.1:8008/api/llm/status |
 
-### 7.1 六业务 Agent（同构后）
+页面冒烟：`/new-ui/`、`/new-ui/aps`、`/new-ui/assistant` 能打开。
 
-| Agent | 主路径 | 入口 |
-|-------|--------|------|
-| `scheduling` | `SchedulingCollabBridge` → `planning_collab` | `/api/agents/scheduling/run`、Orchestrator |
-| `events` | `EventsCollabBridge` → `events_collab` | `/api/agents/events/run`；看板另有 `/api/events/*` |
-| `kitting` | `KittingCollabBridge` → `kitting_collab` | `/api/agents/kitting/run` |
-| `commitment` | `CommitmentCollabBridge` → `commitment_collab` | `/api/agents/commitment/run` |
-| `whatif` | `WhatifCollabBridge` → `whatif_collab` | `/api/agents/whatif/run` |
-| `plans` | `PlansCollabBridge` → `plans_collab` | `/api/agents/plans/run` |
+---
 
-> 旧 `*AgentRunner` 主路径已删除。助手页走 Orchestrator SSE：`/api/orchestrator/stream`。
+## 6. 可选：GLM
 
-### 7.2 规划 / 仿真（S1–S4）
+根目录 `.env` 示例：
 
-| 能力 | 说明 |
-|------|------|
-| Planning Strategy（S1） | `/api/planning/run`、策略 HITL、`strategy_trace` |
-| Planning Collab（S2） | `/api/planning/collab/{analyze,run,runs/{id}}`；Flag `PLANNING_COLLAB_V1`（默认开；关则 collab API 404） |
-| 前端三模式（S3） | APS `PlanningWorkbench`：模板 / 参数 / AI + Package 结果 |
-| 仿真与对比（S4） | Package→MES 仿真、扰动剧本、`/compare` 三甘特 + JSON/PDF |
-
-### 7.3 常用 API
-
-| 接口 | 说明 |
-|------|------|
-| `POST /api/orchestrator/run` | 按 message/intent 路由到唯一 Agent |
-| `POST /api/orchestrator/stream` | 同上，SSE 推送思考过程 |
-| `GET /api/agents/registry` | 6 个业务 Agent 元数据 |
-| `GET /api/tools/registry` | Tool 目录 |
-| `POST /api/agents/{id}/run` | 直连单 Agent |
-| `POST /api/events/*_reschedule` | 看板异常重排（R0/R1/R2），不依赖 Events Agent |
-| `POST /api/db/propose_save` / `confirm_save` | 排程落库 HITL |
-| `GET /api/llm/status` | GLM 开关与 Key 状态 |
-| `GET /api/mcp/status` | MCP 状态（默认关闭） |
-
-### 7.4 GLM / 会话环境变量
+```env
+LLM_ENABLED=1
+ZHIPU_API_KEY=你的key
+ZHIPU_MODEL=glm-4.5-air
+LLM_FALLBACK=rule
+```
 
 | 变量 | 说明 |
 |------|------|
-| `LLM_ENABLED` | `1` 启用（需 `ZHIPU_API_KEY`，写在根目录 `.env`） |
-| `ZHIPU_API_KEY` | 智谱 API Key |
-| `ZHIPU_MODEL` | 默认 `glm-4.5-air` |
-| `LLM_FALLBACK` | 失败时 `rule` 回退 |
-| `LLM_PLAN_AGENTS` | 默认 `scheduling`（其余域已固定编排，不进 LLM Tool-plan） |
-| `PLANNING_COLLAB_V1` | 默认 `1`；仅闸 collab HTTP API |
-| `SESSION_STORE` | `mongo` 持久化会话；`memory` 仅内存 |
+| `LLM_ENABLED` | `1` 启用 |
+| `ZHIPU_API_KEY` | 智谱 Key |
+| `LLM_PLAN_AGENTS` | 默认 `scheduling`（其余业务域为固定编排） |
+| `PLANNING_COLLAB_V1` | 默认 `1`；`0` 时 `/api/planning/collab/*` 返回 404 |
+| `SESSION_STORE` | `mongo` / `memory` |
 | `MCP_ENABLED` | 默认 `0` |
 
-智能助手页：`/new-ui/assistant`。
+`GET /api/llm/status` 可查看是否启用、是否配置了 Key。
 
 ---
 
-## 8. 快速验收
+## 7. 排障
 
-启动后浏览器访问：
-
-- Benchmarks：`http://127.0.0.1:8008/api/benchmarks`
-- 资源配置：`http://127.0.0.1:8008/api/resources/config`
-- Agent 注册表：`http://127.0.0.1:8008/api/agents/registry`
-
-返回 JSON 且无 500，说明后端与 MongoDB 基本联通。
-
----
-
-## 9. 常见问题
-
-### 9.1 `ECONNREFUSED 127.0.0.1:27017`
-
-MongoDB 未监听。处理：
+### 7.1 `ECONNREFUSED 127.0.0.1:27017`
 
 ```powershell
 Start-Service MongoDB
 Get-NetTCPConnection -LocalPort 27017 -State Listen
 ```
 
-### 9.2 `MongoDB 连接失败`
+### 7.2 MongoDB 连接失败
 
-检查 `MONGO_URL`、账号密码、`authSource`、防火墙/绑定地址。
+检查 `MONGO_URL`、账号、`authSource`、防火墙。
 
-### 9.3 端口被占用
+### 7.3 端口占用 / 启动即退出
 
-默认 **8008**。处理任选其一：
+按 §3 运行 `scripts\cleanup_backend.ps1`，或更换 `METAFORGE_PORT`。
 
-```powershell
-$env:METAFORGE_PORT="8080"
-```
-
-或结束占用该端口的进程后重试。
-
-### 9.4 依赖安装失败
+### 7.4 依赖安装失败
 
 ```powershell
 python -m pip install -U pip
 pip install -e .
 ```
 
-### 9.5 只看到 JSON、没有 Vue 页面
+### 7.5 只有 JSON、没有 Vue 页面
 
-未执行前端构建。按 §6.1 `npm run build` 后重启后端。
+先 `cd frontend; npm run build`，再重启 `python main.py`。
+
+### 7.6 前端改了但页面没变
+
+重新 `npm run build`，并强制刷新浏览器（Ctrl+F5）。确认看的是 **8008/new-ui**，不是旧的 5173 会话。
 
 ---
 
-## 10. 目录说明（交付相关）
+## 8. 交付相关目录
 
 | 路径 | 说明 |
 |------|------|
-| `tests/main.py` | FastAPI 入口（MongoDB、API、静态托管） |
-| `tests/templates/dist/` | 前端构建产物（交付访问） |
+| `tests/main.py` | 后端入口 |
+| `tests/templates/dist/` | 前端构建产物 |
 | `frontend/` | Vue3 源码 |
-| `src/metaforge/` | 核心库（agents / collab / tools / planning） |
-| `tests/data/benchmarks/` | 基准算例（`/api/benchmarks`） |
-| `docs/` | 进度、功能清单、规格与计划 |
+| `src/metaforge/` | 业务库（agents / collab / tools / planning） |
+| `.env` | 本地密钥与开关（勿提交） |
+| `scripts/cleanup_backend.ps1` | 清理占用后端端口的进程 |
+| `docs/多智能体开发进度.md` | 能力与进度 |
+| `docs/智能体功能清单.md` | Agent / API 清单 |
+
+---
+
+## 9. 能力索引（非启动必读）
+
+六业务 Agent 均已 CollabBridge 同构；scheduling → `planning_collab`。看板异常重排走 `/api/events/*`，不依赖 Events Agent。
+
+详细能力、S1–S4、Orchestrator API 见：
+
+- [`docs/多智能体开发进度.md`](docs/多智能体开发进度.md)
+- [`docs/智能体功能清单.md`](docs/智能体功能清单.md)
+- [`README.md`](README.md)

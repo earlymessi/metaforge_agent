@@ -21,15 +21,6 @@ def _handle(params: Dict[str, Any], ctx: ToolContext) -> ToolResult:
     if not schedule_results:
         return ToolResult(ok=False, error="schedule_results required")
 
-    solver_id = params.get("solver_id")
-    if solver_id and solver_id in schedule_results:
-        schedule_result = schedule_results[solver_id]
-    else:
-        _, schedule_result = _pick_best_schedule(schedule_results)
-
-    delivery_assessment = params.get("delivery_assessment") or (ctx.artifacts or {}).get(
-        "delivery_assessment"
-    )
     impact_summary = params.get("impact_summary") or (ctx.artifacts or {}).get("impact_summary")
     if not impact_summary:
         impact_report = (ctx.artifacts or {}).get("impact_report")
@@ -38,6 +29,23 @@ def _handle(params: Dict[str, Any], ctx: ToolContext) -> ToolResult:
                 "summary_zh": impact_report.get("summary_zh") or "",
                 "impact_report": impact_report,
             }
+    impact_report = None
+    if isinstance(impact_summary, dict):
+        impact_report = impact_summary.get("impact_report")
+        if not isinstance(impact_report, dict):
+            impact_report = impact_summary if impact_summary.get("scenarios") else None
+
+    solver_id = params.get("solver_id")
+    if not solver_id and isinstance(impact_report, dict):
+        solver_id = impact_report.get("rescheduled_solver") or impact_report.get("baseline_solver")
+    if solver_id and solver_id in schedule_results:
+        schedule_result = schedule_results[solver_id]
+    else:
+        _, schedule_result = _pick_best_schedule(schedule_results)
+
+    delivery_assessment = params.get("delivery_assessment") or (ctx.artifacts or {}).get(
+        "delivery_assessment"
+    )
     updated_jobs = params.get("jobs") or (ctx.artifacts or {}).get("updated_jobs")
     plan_name = params.get("plan_name") or ctx.extras.get("plan_name") or (ctx.artifacts or {}).get(
         "loaded_plan", {}

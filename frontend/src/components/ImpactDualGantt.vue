@@ -21,13 +21,19 @@ let rightChart = null
 
 const r1Title = computed(() => {
   const label = props.scenarios?.r1?.label || 'R1 · 扰动不重排'
-  const ms = props.scenarios?.r1?.makespan
+  const fromGantt = Array.isArray(props.r1Gantt) && props.r1Gantt.length
+    ? Math.max(...props.r1Gantt.map((d) => Number(d.end) || 0))
+    : null
+  const ms = fromGantt != null ? fromGantt : props.scenarios?.r1?.makespan
   return ms != null ? `${label}（完工 ${Number(ms).toFixed(1)} h）` : label
 })
 
 const r2Title = computed(() => {
   const label = props.scenarios?.r2?.label || 'R2 · 重调度'
-  const ms = props.scenarios?.r2?.makespan
+  const fromGantt = Array.isArray(props.r2Gantt) && props.r2Gantt.length
+    ? Math.max(...props.r2Gantt.map((d) => Number(d.end) || 0))
+    : null
+  const ms = fromGantt != null ? fromGantt : props.scenarios?.r2?.makespan
   return ms != null ? `${label}（完工 ${Number(ms).toFixed(1)} h）` : label
 })
 

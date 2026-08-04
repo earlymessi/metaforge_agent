@@ -134,6 +134,13 @@ class BaseAgent:
         if not rule_summary:
             rule_summary = f"{self.name_zh} 执行完成。"
 
+        # 异常重排等已有 R0/R1/R2 量化摘要时，禁止 LLM 重写数字（曾出现文案全是 30、表格 R1=37 的不一致）
+        impact_summary = ctx.artifacts.get("impact_summary") or {}
+        impact_report = ctx.artifacts.get("impact_report") or impact_summary.get("impact_report")
+        if isinstance(impact_summary, dict) and impact_summary.get("summary_zh"):
+            if isinstance(impact_report, dict) and (impact_report.get("scenarios") or {}).get("r0"):
+                return str(impact_summary.get("summary_zh") or rule_summary)
+
         from metaforge.orchestrator.llm_summarize import llm_summarize_enabled, summarize_agent_response
 
         if not llm_summarize_enabled() or not (request.message or "").strip():

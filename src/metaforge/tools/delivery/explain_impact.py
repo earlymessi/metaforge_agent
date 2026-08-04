@@ -15,17 +15,29 @@ def _handle(params: Dict[str, Any], ctx: ToolContext) -> ToolResult:
 
     et = impact.get("event_type") or impact.get("mode") or "reschedule"
     scenarios = impact.get("scenarios") or {}
+
+    def _ms(key: str) -> float:
+        gantt = impact.get(f"{key}_gantt") or []
+        if gantt:
+            return max(float(op.get("end") or 0) for op in gantt)
+        sc = scenarios.get(key) or {}
+        if sc.get("makespan") is not None:
+            try:
+                return float(sc.get("makespan"))
+            except (TypeError, ValueError):
+                pass
+        return 0.0
+
     lines: list[str] = []
 
     if et == "insert_order" and scenarios:
         ins = impact.get("insert_job_name") or "插单"
         ft = float(impact.get("freeze_time") or 0)
         lines.append(f"{ins}：{ft:.0f}小时后插入，模式 {impact.get('mode', 'local_repair')}。")
-        r0, r1, r2 = scenarios.get("r0", {}), scenarios.get("r1", {}), scenarios.get("r2", {})
         lines.append(
-            f"原计划(R0) makespan={r0.get('makespan', 0):.1f}；"
-            f"仅往后排(R1)={r1.get('makespan', 0):.1f}；"
-            f"重排(R2)={r2.get('makespan', 0):.1f}。"
+            f"原计划(R0) makespan={_ms('r0'):.1f}；"
+            f"仅往后排(R1)={_ms('r1'):.1f}；"
+            f"重排(R2)={_ms('r2'):.1f}。"
         )
         imp = impact.get("improvement_vs_r1") or {}
         if float(imp.get("makespan_delta", 0)) < -1e-6:
@@ -45,11 +57,10 @@ def _handle(params: Dict[str, Any], ctx: ToolContext) -> ToolResult:
             f"{label}故障 {impact.get('breakdown_start', 0):.1f}–{impact.get('breakdown_end', 0):.1f}h"
             f"（冻结时刻 {impact.get('freeze_time', 0):.1f}h）。"
         )
-        r0, r1, r2 = scenarios.get("r0", {}), scenarios.get("r1", {}), scenarios.get("r2", {})
         lines.append(
-            f"原计划(R0) makespan={r0.get('makespan', 0):.1f}；"
-            f"不重排(R1)={r1.get('makespan', 0):.1f}；"
-            f"重排(R2,{impact.get('baseline_solver', '')})={r2.get('makespan', 0):.1f}。"
+            f"原计划(R0) makespan={_ms('r0'):.1f}；"
+            f"不重排(R1)={_ms('r1'):.1f}；"
+            f"重排(R2,{impact.get('baseline_solver', '')})={_ms('r2'):.1f}。"
         )
         imp = impact.get("improvement_vs_r1") or {}
         if float(imp.get("makespan_delta", 0)) < -1e-6:

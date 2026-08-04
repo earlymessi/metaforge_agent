@@ -25,6 +25,8 @@
         <ModeAiPanel
           :disabled="disabled || running"
           :analyses="analyses"
+          :selected-solvers="selectedSolvers"
+          :solver-groups="solverGroups"
           @run="onAiRun"
         />
       </el-tab-pane>
@@ -85,12 +87,18 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { api } from '../../api/client'
-import { extractPackageView } from './packageExtract.js'
+import {
+  extractPackageView,
+  buildPackagePlanIdentity,
+  scheduleResultsFromPlanningRun,
+} from './packageExtract.js'
 import ModeTemplatePanel from './ModeTemplatePanel.vue'
 import ModeParameterPanel from './ModeParameterPanel.vue'
 import ModeAiPanel from './ModeAiPanel.vue'
 import StrategyHitlBar from './StrategyHitlBar.vue'
 import PackageResultPanel from './PackageResultPanel.vue'
+
+const emit = defineEmits(['schedule-ready'])
 
 const props = defineProps({
   disabled: {
@@ -106,6 +114,14 @@ const props = defineProps({
     default: () => [],
   },
   machines: {
+    type: Array,
+    default: () => [],
+  },
+  selectedSolvers: {
+    type: Array,
+    default: () => [],
+  },
+  solverGroups: {
     type: Array,
     default: () => [],
   },
@@ -144,6 +160,34 @@ function requireJobs() {
   return true
 }
 
+function emitScheduleReady(data, view) {
+  const scheduleResults = scheduleResultsFromPlanningRun(data, view)
+  if (!scheduleResults) return
+  const strategy =
+    data?.strategy_approved ||
+    data?.strategy_draft ||
+    data?.package?.strategy ||
+    null
+  emit('schedule-ready', {
+    schedule_results: scheduleResults,
+    recommended_schedule_id: view?.recommended_schedule_id || null,
+    package_code: view?.package_code || null,
+    run_id: data?.run_id || runId.value || null,
+    strategy,
+    interpretation: strategy
+      ? {
+          strategy_id: strategy.preset_id || strategy.template_id || strategy.id || '',
+          strategy_name:
+            strategy.name ||
+            strategy.label ||
+            strategy.preset_id ||
+            strategy.template_id ||
+            '协同排产策略',
+        }
+      : null,
+  })
+}
+
 function applyRunResponse(data, { successMsg } = {}) {
   if (!data) return
   lastRunPayload.value = data
@@ -164,6 +208,7 @@ function applyRunResponse(data, { successMsg } = {}) {
   }
   if (data.status === 'COMPLETED') {
     packageView.value = extractPackageView(data)
+    emitScheduleReady(data, packageView.value)
     if (successMsg) ElMessage.success(successMsg)
   } else if (data.status === 'WAITING_APPROVAL') {
     packageView.value = null
@@ -193,24 +238,43 @@ async function onSendToSim() {
       fromRun ||
       fromView ||
       []
+    const identity = buildPackagePlanIdentity(packageView.value, { runId: runId.value })
     const payload = {
       run_id: runId.value || undefined,
-      package: lastRunPayload.value?.package || {
+      package: {
+        ...(lastRunPayload.value?.package || {}),
         recommended_schedule_id: packageView.value.recommended_schedule_id,
+        package_code: identity.package_code,
       },
       candidates,
       jobs: props.jobs,
       persist_plan: true,
-      plan_name: 'Package 推荐计划',
+      plan_name: identity.plan_name,
       sim_speed: 60,
     }
     if (!pickWithGantt(candidates).length && !payload.run_id) {
       ElMessage.error('推荐方案缺少甘特数据，请重新排产后再送入仿真')
       return
     }
-    await api.post('/api/execution/start_from_package', payload)
-    ElMessage.success('已送入执行仿真')
-    await router.push({ path: '/dashboard', query: { from_package: '1' } })
+    const { data } = await api.post('/api/execution/start_from_package', payload)
+    // 送入仿真时再兜底同步一次，避免只进看板时报表仍空
+    emitScheduleReady(
+      {
+        ...(lastRunPayload.value || {}),
+        candidate_schedules: candidates,
+        run_id: runId.value,
+      },
+      packageView.value,
+    )
+    ElMessage.success(`已送入执行仿真：${data?.plan_name || identity.plan_name}`)
+    await router.push({
+      path: '/dashboard',
+      query: {
+        from_package: '1',
+        plan_id: data?.plan_id || '',
+        package_code: data?.package_code || identity.package_code,
+      },
+    })
   } catch (e) {
     ElMessage.error(`送入仿真失败: ${e?.response?.data?.detail || e?.message || e}`)
   } finally {
@@ -301,6 +365,7 @@ async function onAiRun(payload) {
       jobs: props.jobs,
       machines: props.machines,
       skip_strategy_hitl: false,
+      primary_solvers: Array.isArray(props.selectedSolvers) ? [...props.selectedSolvers] : [],
     })
     applyRunResponse(data, { successMsg: 'AI 协同排产完成' })
   } catch (e) {

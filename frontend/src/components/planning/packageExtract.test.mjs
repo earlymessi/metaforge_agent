@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict'
-import { extractPackageView } from './packageExtract.js'
+import {
+  extractPackageView,
+  candidatesToScheduleResults,
+  scheduleResultsFromPlanningRun,
+} from './packageExtract.js'
 
 // Package-nested evaluation (primary shape from pipeline)
 {
@@ -72,6 +76,61 @@ import { extractPackageView } from './packageExtract.js'
   assert.deepEqual(view.simulated_fields, [])
   assert.deepEqual(view.candidates, [])
   assert.deepEqual(view.metrics, {})
+}
+
+// candidates → store.results shape for reports / materials / energy
+{
+  const results = candidatesToScheduleResults([
+    {
+      schedule_id: 'ts',
+      solver: 'ts',
+      solver_label: '禁忌搜索 TS',
+      metrics: { makespan: 55, tardiness: 2 },
+      score: 12.5,
+      gantt_data: [
+        { machine_id: 0, start: 0, end: 30, job_id: 1 },
+        { machine_id: 1, start: 30, end: 55, job_id: 1 },
+      ],
+      is_recommended: true,
+      rank: 1,
+    },
+    {
+      schedule_id: 'ga',
+      solver: 'ga',
+      metrics: {},
+      gantt_data: [{ machine_id: 0, start: 0, end: 70, job_id: 1 }],
+      rank: 2,
+    },
+  ])
+  assert.ok(results.ts)
+  assert.equal(results.ts.best_score, 55)
+  assert.equal(results.ts.score, 12.5)
+  assert.equal(results.ts.name, '禁忌搜索 TS')
+  assert.equal(results.ts.gantt_data.length, 2)
+  assert.equal(results.ga.best_score, 70)
+  assert.equal(results.ga.metrics.makespan, 70)
+}
+
+{
+  const data = {
+    status: 'COMPLETED',
+    evaluation: {
+      recommended_schedule_id: 'spt',
+      ranking: [{ schedule_id: 'spt', score: 1, hard_ok: true }],
+    },
+    candidate_schedules: [
+      {
+        schedule_id: 'spt',
+        solver: 'spt',
+        metrics: { makespan: 40 },
+        gantt_data: [{ machine_id: 0, start: 0, end: 40, job_id: 1 }],
+      },
+    ],
+  }
+  const results = scheduleResultsFromPlanningRun(data)
+  assert.ok(results.spt)
+  assert.equal(results.spt.best_score, 40)
+  assert.equal(results.spt.is_recommended, true)
 }
 
 console.log('packageExtract ok')

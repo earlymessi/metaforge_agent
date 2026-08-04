@@ -630,8 +630,16 @@ onMounted(async () => {
   if (route.query.from_package === '1') {
     await loadPlans()
     await refreshAll()
+    if (route.query.plan_id) {
+      selectedPlanId.value = String(route.query.plan_id)
+    }
+    const code = route.query.package_code ? String(route.query.package_code) : ''
     if (execution.value?.status && execution.value.status !== 'idle') {
-      ElMessage.success('已加载 Package 执行仿真')
+      ElMessage.success(
+        code
+          ? `已加载 Package 执行仿真（${code} · ${execution.value.plan_name || ''}）`
+          : `已加载 Package 执行仿真（${execution.value.plan_name || ''}）`,
+      )
     }
     router.replace({ path: '/dashboard', query: {} })
   }
@@ -644,6 +652,9 @@ watch(
     if (v !== '1') return
     await loadPlans()
     await refreshAll()
+    if (route.query.plan_id) {
+      selectedPlanId.value = String(route.query.plan_id)
+    }
     router.replace({ path: '/dashboard', query: {} })
   },
 )

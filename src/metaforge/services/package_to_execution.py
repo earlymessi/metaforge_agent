@@ -60,8 +60,36 @@ def extract_recommended_gantt(
     return _solver_id_from_candidate(candidate, recommended_id), list(gantt_data)
 
 
-def _schedule_snapshot(solver_id: str, gantt: list) -> dict:
-    entry = {"gantt_data": list(gantt), "metrics": {}}
+_SOLVER_NAMES = {
+    "ts": "禁忌搜索 TS",
+    "ga": "遗传算法 GA",
+    "sa": "模拟退火 SA",
+    "aco": "蚁群 ACO",
+    "edd": "最早交期 EDD",
+    "spt": "最短加工 SPT",
+    "mwkr": "剩余最多 MWKR",
+    "fifo": "先进先出 FIFO",
+}
+
+
+def _schedule_snapshot(
+    solver_id: str,
+    gantt: list,
+    *,
+    metrics: dict | None = None,
+    candidate: dict | None = None,
+) -> dict:
+    metrics = dict(metrics or (candidate or {}).get("metrics") or {})
+    makespan = metrics.get("makespan")
+    entry = {
+        "id": solver_id,
+        "algorithm": solver_id,
+        "name": _SOLVER_NAMES.get(str(solver_id).lower(), str(solver_id).upper()),
+        "gantt_data": list(gantt),
+        "metrics": metrics,
+        "best_score": makespan,
+        "makespan": makespan,
+    }
     return {solver_id: entry}
 
 
@@ -101,8 +129,18 @@ async def start_from_package(
         package=resolved_package,
         candidates=resolved_candidates,
     )
-    schedule_result = _schedule_snapshot(solver_id, gantt)
+    matched = _match_candidate(resolved_candidates or [], solver_id)
+    schedule_result = _schedule_snapshot(
+        solver_id,
+        gantt,
+        candidate=matched,
+    )
     now_iso = datetime.now(timezone.utc).isoformat()
+    package_code = (
+        resolved_package.get("package_code")
+        or (plan_name.split(" · ", 1)[0] if plan_name else None)
+        or f"PKG-{solver_id.upper()}"
+    )
 
     if plan_id:
         oid = ObjectId(plan_id)
@@ -110,16 +148,23 @@ async def start_from_package(
             "schedule_result": schedule_result,
             "schedule_results": schedule_result,
             "updated_at": now_iso,
+            "package_code": package_code,
+            "recommended_solver": solver_id,
+            "source": "package_to_execution",
         }
         if jobs is not None:
             sets["jobs"] = jobs
         if plan_name:
             sets["plan_name"] = plan_name
+        if run_id:
+            sets["source_run_id"] = run_id
         await orders_coll.update_one({"_id": oid}, {"$set": sets})
         resolved_plan_id = str(plan_id)
     elif persist_plan:
         doc = {
             "plan_name": plan_name,
+            "package_code": package_code,
+            "recommended_solver": solver_id,
             "jobs": jobs or [],
             "schedule_result": schedule_result,
             "schedule_results": schedule_result,
@@ -128,15 +173,24 @@ async def start_from_package(
             "status": "done",
             "source": "package_to_execution",
         }
+        if run_id:
+            doc["source_run_id"] = run_id
         result = await orders_coll.insert_one(doc)
         resolved_plan_id = str(result.inserted_id)
     else:
         raise ValueError("plan_id required when persist_plan=false")
 
-    return await start_execution(
+    exec_doc = await start_execution(
         execution_coll,
         orders_coll,
         plan_id=resolved_plan_id,
         solver_id=solver_id,
         sim_speed=sim_speed,
     )
+    return {
+        **exec_doc,
+        "plan_id": resolved_plan_id,
+        "plan_name": plan_name,
+        "package_code": package_code,
+        "recommended_solver": solver_id,
+    }

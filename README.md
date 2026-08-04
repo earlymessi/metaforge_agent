@@ -15,7 +15,7 @@ cd frontend; npm install; npm run build; cd ..
 cd tests; python main.py
 ```
 
-- 交付入口：`http://127.0.0.1:8000/new-ui/`
+- 交付入口：`http://127.0.0.1:8008/new-ui/`（`METAFORGE_PORT` 默认 8008）
 - 运行手册：[`star.md`](star.md)
 - 设计规格：[参数化 SchedulingStrategy](docs/superpowers/specs/2026-08-03-parameterized-scheduling-strategy-design.md)
 - 实现计划：[S1 Implementation Plan](docs/superpowers/plans/2026-08-03-parameterized-scheduling-strategy.md)

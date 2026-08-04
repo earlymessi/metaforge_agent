@@ -408,12 +408,24 @@ const rescheduleResults = computed(() => store.activeRescheduleResults)
 const recoveryScenarioRows = computed(() => {
   const sc = impactIr.value?.scenarios
   if (!sc) return []
-  return ['r0', 'r1', 'r2'].map((k) => ({
-    key: k,
-    label: sc[k]?.label || k,
-    makespan: sc[k]?.makespan,
-    weighted_tardiness_total: sc[k]?.weighted_tardiness_total,
-  }))
+  const ganttByKey = {
+    r0: impactIr.value?.r0_gantt,
+    r1: impactR1Gantt.value,
+    r2: impactR2Gantt.value,
+  }
+  const msFromGantt = (gantt) => {
+    if (!Array.isArray(gantt) || !gantt.length) return null
+    return Math.max(...gantt.map((op) => Number(op.end) || 0))
+  }
+  return ['r0', 'r1', 'r2'].map((k) => {
+    const fromGantt = msFromGantt(ganttByKey[k])
+    return {
+      key: k,
+      label: sc[k]?.label || k,
+      makespan: fromGantt != null ? Number(fromGantt.toFixed(4)) : sc[k]?.makespan,
+      weighted_tardiness_total: sc[k]?.weighted_tardiness_total,
+    }
+  })
 })
 
 const impactRows = computed(() => {

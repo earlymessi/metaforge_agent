@@ -6,18 +6,19 @@ from metaforge.strategy.capability_matrix import get_capability
 from metaforge.strategy.models import SchedulingStrategy, SolverPolicy
 from metaforge.utils.solver_registry import get_solver_spec, resolve_solver_id
 
-_DEFAULT_PRIMARY = ["ts", "ga"]
+_DEFAULT_PRIMARY = ["ts", "ga", "sa"]
 _DEFAULT_FALLBACK = "edd"
 _DEFAULT_MAX_CANDIDATES = 3
+_HARD_MAX_CANDIDATES = 12
 _DEFAULT_TIME_BUDGET = 8.0
 
 _TEMPLATE_PRIMARY: Dict[str, List[str]] = {
-    "delivery": ["ts", "ga"],
-    "makespan": ["ts", "sa"],
-    "cost": ["sa", "ga"],
-    "balance_load": ["ga", "aco"],
-    "throughput": ["ts", "ga"],
-    "balanced": ["ts", "ga"],
+    "delivery": ["ts", "ga", "edd"],
+    "makespan": ["ts", "sa", "spt"],
+    "cost": ["sa", "ga", "spt"],
+    "balance_load": ["ga", "aco", "mwkr"],
+    "throughput": ["ts", "ga", "spt"],
+    "balanced": ["ts", "ga", "sa"],
 }
 
 _TEMPLATE_FALLBACK: Dict[str, str] = {
@@ -86,7 +87,12 @@ def build_solver_policy(
     fallback: Optional[str] = resolve_solver_id(str(fallback_raw))
 
     max_candidates = int(prefs.get("max_candidates") or _DEFAULT_MAX_CANDIDATES)
-    max_candidates = max(1, min(max_candidates, _DEFAULT_MAX_CANDIDATES))
+    max_candidates = max(1, min(max_candidates, _HARD_MAX_CANDIDATES))
+
+    # 若显式指定 primary_solvers，候选数至少覆盖所选算法
+    if prefs.get("primary_solvers"):
+        max_candidates = max(max_candidates, min(len(primary), _HARD_MAX_CANDIDATES))
+        max_candidates = min(max_candidates, _HARD_MAX_CANDIDATES)
 
     time_budget = _time_budget_for(n_jobs, prefs.get("time_budget_seconds"))
 

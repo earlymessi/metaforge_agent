@@ -11,10 +11,35 @@
         />
       </el-form-item>
 
+      <div class="solver-preview">
+        <div class="solver-preview-title">
+          对比算法（与上方勾选共用）
+          <span class="solver-preview-count">{{ selectedSolvers.length }} 个</span>
+        </div>
+        <div v-if="selectedSolvers.length" class="solver-preview-tags">
+          <el-tag
+            v-for="id in selectedSolvers"
+            :key="id"
+            size="small"
+            effect="plain"
+            type="info"
+          >
+            {{ solverDisplay(id) }}
+          </el-tag>
+        </div>
+        <el-alert
+          v-else
+          type="warning"
+          :closable="false"
+          title="请先在上方「对比算法」中勾选至少一个算法"
+          class="solver-preview-alert"
+        />
+      </div>
+
       <el-button
         type="primary"
         style="width: 100%"
-        :disabled="disabled || !userGoal.trim()"
+        :disabled="disabled || !userGoal.trim() || !selectedSolvers.length"
         @click="onRun"
       >
         AI 协同排产运行
@@ -46,6 +71,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { solverLabel } from './packageExtract.js'
 
 const props = defineProps({
   disabled: {
@@ -56,12 +82,34 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  selectedSolvers: {
+    type: Array,
+    default: () => [],
+  },
+  solverGroups: {
+    type: Array,
+    default: () => [],
+  },
 })
 
 const emit = defineEmits(['run'])
 
 const userGoal = ref('')
 const analysisOpen = ref(['analyses'])
+
+const nameById = computed(() => {
+  const map = {}
+  for (const g of props.solverGroups || []) {
+    for (const s of g.items || []) {
+      map[s.id] = s.name || s.id
+    }
+  }
+  return map
+})
+
+function solverDisplay(id) {
+  return nameById.value[id] || solverLabel(id)
+}
 
 const hasAnalyses = computed(() => {
   const a = props.analyses
@@ -100,9 +148,11 @@ const resourceSummary = computed(() => {
 function onRun() {
   const goal = userGoal.value.trim()
   if (!goal) return
+  if (!props.selectedSolvers?.length) return
   emit('run', {
     user_goal: goal,
     skip_strategy_hitl: false,
+    primary_solvers: [...props.selectedSolvers],
   })
 }
 </script>
@@ -116,6 +166,39 @@ function onRun() {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.solver-preview {
+  margin: 4px 0 12px;
+  padding: 10px;
+  border: 1px dashed #dcdfe6;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.solver-preview-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.solver-preview-count {
+  font-weight: 500;
+  color: #909399;
+}
+
+.solver-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.solver-preview-alert {
+  padding: 6px 10px;
 }
 
 .analysis-collapse {

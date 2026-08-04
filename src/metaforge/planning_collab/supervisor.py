@@ -222,6 +222,7 @@ def run_collab(
     llm_client: Any = None,
     problem: Any = None,
     parallel: bool = True,
+    primary_solvers: Any = None,
 ) -> Dict[str, Any]:
     """Analyze → S1 generate_strategy/run_planning; return package + artifacts."""
     analysis = run_collab_analyze(
@@ -246,6 +247,7 @@ def run_collab(
         order_analysis=arts.get("order_analysis"),
         constraint_analysis=arts.get("constraint_analysis"),
         resource_analysis=arts.get("resource_analysis"),
+        primary_solvers=primary_solvers,
     )
 
     out = dict(planning)

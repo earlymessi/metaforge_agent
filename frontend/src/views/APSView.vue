@@ -279,8 +279,6 @@
         <template #header>
           <div class="row">
             <div class="h">策略与运行</div>
-            <div class="spacer" />
-            <el-checkbox :model-value="isAllSelected" @change="toggleSelectAll">全选</el-checkbox>
           </div>
         </template>
 
@@ -356,25 +354,44 @@
           </div>
         </div>
 
+        <div class="solver-panel">
+          <div class="solver-panel-head">
+            <div class="h2">对比算法</div>
+            <el-checkbox :model-value="isAllSelected" @change="toggleSelectAll">全选</el-checkbox>
+          </div>
+          <p class="solver-panel-hint">AI 策略与「开始排程计算」共用此处勾选（最多 12 个）</p>
+          <div v-for="group in solverGroups" :key="group.title" class="solver-group">
+            <div class="group-title">{{ group.title }}</div>
+            <el-checkbox-group v-model="selectedSolvers" class="solver-list">
+              <el-checkbox
+                v-for="s in group.items"
+                :key="s.id"
+                :value="s.id"
+                :label="s.id"
+                class="solver-check"
+              >
+                <div class="solver-item">
+                  <div class="solver-item-name">{{ s.name }}</div>
+                  <div class="solver-item-meta">
+                    <span class="solver-item-id">{{ s.id }}</span>
+                    <el-tag v-if="s.supports_weights_in_search" size="small" type="success" effect="plain">多目标</el-tag>
+                    <el-tag v-else-if="s.optimization_mode === 'rule_construct'" size="small" type="info" effect="plain">规则</el-tag>
+                  </div>
+                </div>
+              </el-checkbox>
+            </el-checkbox-group>
+          </div>
+        </div>
+
         <PlanningWorkbench
           :disabled="planningJobsDisabled"
           :jobs="buildPlanningJobs()"
           :machines="buildPlanningMachines()"
           :job-ids="planningJobIds"
+          :selected-solvers="selectedSolvers"
+          :solver-groups="solverGroups"
+          @schedule-ready="onPlanningScheduleReady"
         />
-
-        <el-space direction="vertical" fill style="width:100%">
-          <div v-for="group in solverGroups" :key="group.title">
-            <div class="group-title">{{ group.title }}</div>
-            <el-checkbox-group v-model="selectedSolvers" class="solver-list">
-              <el-checkbox v-for="s in group.items" :key="s.id" :label="s.id">
-                <span>{{ s.name }}</span>
-                <el-tag v-if="s.supports_weights_in_search" size="small" type="success" class="solver-tag">多目标搜索</el-tag>
-                <el-tag v-else-if="s.optimization_mode === 'rule_construct'" size="small" type="info" class="solver-tag">规则构造</el-tag>
-              </el-checkbox>
-            </el-checkbox-group>
-          </div>
-        </el-space>
 
         <div style="margin-top:16px">
           <el-checkbox v-model="useAsyncRun" style="margin-bottom: 8px">异步计算（大规模算例推荐，避免页面超时）</el-checkbox>
@@ -415,7 +432,9 @@ import {
   clearApsLoadScheduleKeys,
   consumeApsLoadSchedule,
   hydrateResultsStoreFromPlan,
+  isValidScheduleResults,
   persistScheduleToPlan,
+  stashScheduleResultsForReports,
 } from '../utils/planScheduleSync'
 
 const router = useRouter()
@@ -531,7 +550,7 @@ const bomTemplates = [
 const solverGroups = ref([])
 const catalogLoading = ref(false)
 
-const selectedSolvers = ref(['spt', 'ts'])
+const selectedSolvers = ref(['spt', 'ts', 'ga', 'sa'])
 const allSolverIds = computed(() =>
   solverGroups.value.flatMap((g) => g.items.map((x) => x.id)),
 )
@@ -853,33 +872,91 @@ function normalizeJobs(rawJobs) {
 }
 
 function loadTemplate() {
+  // 完整演示池：交期/数量/换型/可选机台/多工艺/全物料 BOM，可直接跑 AI 协同排产
+  if (!planName.value?.trim()) {
+    planName.value = '演示计划-机加装配混线'
+  }
   customJobs.value = normalizeJobs([
     {
-      name: '模板工单-1',
+      name: '急单-钢架焊接',
       priority: 100,
+      due_date: 36,
+      quantity: 2,
       bom: [
         { material_id: 'MAT_STEEL', quantity_per_unit: 2.5, consume_mode: 'job_start' },
+        { material_id: 'MAT_SCREW', quantity_per_unit: 8, consume_mode: 'job_start' },
+      ],
+      tasks: [
+        { name: '下料', machine_id: 0, machine_options: [0, 4], machine_group: 'CUT', duration: 6, setup_time: 1 },
+        { name: '焊接', machine_id: 2, machine_options: [2], machine_group: 'WELD', duration: 8, setup_time: 2 },
+        { name: '装配', machine_id: 3, machine_options: [3], machine_group: 'ASM', duration: 4 },
+      ],
+    },
+    {
+      name: '普通-铝壳铣削',
+      priority: 10,
+      due_date: 48,
+      quantity: 4,
+      bom: [
+        { material_id: 'MAT_ALUM', quantity_per_unit: 1.5, consume_mode: 'job_start' },
         { material_id: 'MAT_SCREW', quantity_per_unit: 4, consume_mode: 'job_start' },
       ],
       tasks: [
-        { name: 'Cut', machine_id: 0, machine_options: [0, 4], machine_group: 'CUT', duration: 8 },
-        { name: 'Weld', machine_id: 2, machine_options: [2], machine_group: 'WELD', duration: 6 },
+        { name: '铣削', machine_id: 1, machine_options: [1, 5], machine_group: 'MILL', duration: 7, setup_time: 1 },
+        { name: '钻孔', machine_id: 1, machine_options: [1, 2], machine_group: 'DRILL', duration: 3 },
+        { name: '装配', machine_id: 3, machine_options: [3], machine_group: 'ASM', duration: 3 },
       ],
     },
     {
-      name: '模板工单-2',
-      priority: 10,
+      name: '急单-注塑罩壳',
+      priority: 80,
+      due_date: 30,
+      quantity: 6,
       bom: [
-        { material_id: 'MAT_ALUM', quantity_per_unit: 1.5, consume_mode: 'job_start' },
-        { material_id: 'MAT_PLASTIC', quantity_per_unit: 0.5, consume_mode: 'per_hour' },
+        { material_id: 'MAT_PLASTIC', quantity_per_unit: 0.8, consume_mode: 'job_start' },
+        { material_id: 'MAT_SCREW', quantity_per_unit: 2, consume_mode: 'job_start' },
       ],
       tasks: [
-        { name: 'Mill', machine_id: 1, machine_options: [1, 5], machine_group: 'MILL', duration: 7 },
-        { name: 'Assemble', machine_id: 3, machine_options: [3], machine_group: 'ASM', duration: 5 },
+        { name: '注塑备料', machine_id: 0, machine_options: [0], machine_group: 'CUT', duration: 3 },
+        { name: '精铣', machine_id: 1, machine_options: [1, 5], machine_group: 'MILL', duration: 5, setup_time: 1 },
+        { name: '装配', machine_id: 3, machine_options: [3], machine_group: 'ASM', duration: 2 },
+      ],
+    },
+    {
+      name: '普通-连续耗钢件',
+      priority: 10,
+      due_date: 60,
+      quantity: 1,
+      bom: [
+        { material_id: 'MAT_STEEL', quantity_per_unit: 3, consume_mode: 'per_hour' },
+        { material_id: 'MAT_SCREW', quantity_per_unit: 6, consume_mode: 'job_start' },
+      ],
+      tasks: [
+        { name: '粗加工', machine_id: 0, machine_options: [0, 4], machine_group: 'CUT', duration: 10, setup_time: 2 },
+        { name: '精加工', machine_id: 1, machine_options: [1, 5], machine_group: 'MILL', duration: 8 },
+        { name: '焊接加固', machine_id: 2, machine_options: [2], machine_group: 'WELD', duration: 5 },
+      ],
+    },
+    {
+      name: '综合装配-混料整机',
+      priority: 40,
+      due_date: 54,
+      quantity: 3,
+      bom: [
+        { material_id: 'MAT_STEEL', quantity_per_unit: 1, consume_mode: 'job_start' },
+        { material_id: 'MAT_ALUM', quantity_per_unit: 0.5, consume_mode: 'job_start' },
+        { material_id: 'MAT_PLASTIC', quantity_per_unit: 0.3, consume_mode: 'job_start' },
+        { material_id: 'MAT_SCREW', quantity_per_unit: 12, consume_mode: 'job_start' },
+      ],
+      tasks: [
+        { name: '下料', machine_id: 0, machine_options: [0, 4], machine_group: 'CUT', duration: 4, setup_time: 1 },
+        { name: '机加', machine_id: 1, machine_options: [1, 5], machine_group: 'MILL', duration: 6 },
+        { name: '焊接', machine_id: 2, machine_options: [2], machine_group: 'WELD', duration: 4 },
+        { name: '总装', machine_id: 3, machine_options: [3], machine_group: 'ASM', duration: 7, setup_time: 1 },
       ],
     },
   ])
-  ElMessage.success('已加载示例工单（含 BOM）')
+  ElMessage.success('已加载 5 张演示工单（含交期/数量/换型/BOM）')
 }
 
 function exportJSON() {
@@ -930,6 +1007,45 @@ async function saveScheduleSnapshotToPlan(results, extras = {}) {
     console.warn('save schedule to plan', e)
     ElMessage.warning('排程结果未能写入计划库，分析报表可能无法恢复')
   }
+}
+
+/** AI/模板/参数排产完成后，同步多算法结果到报表/物料/能耗等页 */
+async function onPlanningScheduleReady(payload) {
+  const results = payload?.schedule_results
+  if (!isValidScheduleResults(results)) return
+
+  store.setResults(results)
+  store.setImpactReport(null)
+  store.currentPlanInput = customJobs.value
+  store.currentPlanName = planName.value
+  store.currentPlanId = currentPlanId.value
+
+  const interp = payload?.interpretation
+  if (interp?.strategy_id || interp?.strategy_name) {
+    store.setSchedulingStrategy(interp.strategy_id || '', interp.strategy_name || '')
+  } else {
+    store.setSchedulingStrategy('planning_package', '协同排产')
+  }
+
+  stashScheduleResultsForReports({
+    schedule_results: results,
+    plan_id: currentPlanId.value,
+    plan_name: planName.value,
+    jobs: customJobs.value,
+    interpretation: interp || {
+      strategy_id: 'planning_package',
+      strategy_name: '协同排产',
+    },
+  })
+
+  if (currentPlanId.value && inputMode.value === 'custom') {
+    await saveScheduleSnapshotToPlan(results, {
+      interpretation: interp || undefined,
+    })
+  }
+
+  const n = Object.keys(results).length
+  ElMessage.success(`已同步 ${n} 个算法方案到分析报表 / 物料 / 能耗等资源页`)
 }
 
 function syncWorkContextToStore() {
@@ -1216,7 +1332,8 @@ async function fetchSolverCatalog() {
     if (ids.length) {
       selectedSolvers.value = selectedSolvers.value.filter((id) => ids.includes(id))
       if (selectedSolvers.value.length === 0) {
-        selectedSolvers.value = ids.includes('spt') && ids.includes('ts') ? ['spt', 'ts'] : ids.slice(0, 2)
+        const preferred = ['spt', 'ts', 'ga', 'sa'].filter((id) => ids.includes(id))
+        selectedSolvers.value = preferred.length ? preferred : ids.slice(0, 4)
       }
     }
   } catch (e) {
@@ -1429,9 +1546,81 @@ onMounted(async () => {
 }
 .task-block { margin-bottom: 4px; }
 .due-label { font-size: 11px; color: #909399; }
-.group-title { font-size: 12px; color: #909399; margin-bottom: 6px; font-weight: 700; }
-.solver-list { display: grid; grid-template-columns: 1fr 1fr; row-gap: 6px; }
-.solver-tag { margin-left: 6px; vertical-align: middle; }
+.group-title { font-size: 12px; color: #909399; margin-bottom: 8px; font-weight: 700; }
+.solver-panel {
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+.solver-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.solver-panel-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+}
+.solver-group + .solver-group {
+  margin-top: 12px;
+}
+.solver-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.solver-list :deep(.solver-check) {
+  margin: 0;
+  height: auto;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  background: #fff;
+  align-items: flex-start;
+  white-space: normal;
+}
+.solver-list :deep(.solver-check .el-checkbox__label) {
+  width: 100%;
+  padding-left: 8px;
+  line-height: 1.3;
+  white-space: normal;
+}
+.solver-list :deep(.solver-check.is-checked) {
+  border-color: var(--el-color-primary-light-5);
+  background: var(--el-color-primary-light-9);
+}
+.solver-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.solver-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.solver-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.solver-item-id {
+  font-size: 11px;
+  color: #909399;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
 @media (max-width: 1280px) {
   .job-head-grid {
     grid-template-columns: 1fr 1fr;
@@ -1445,6 +1634,9 @@ onMounted(async () => {
   }
   .bom-row-cols {
     grid-template-columns: minmax(0, 1.5fr) 96px 120px 68px;
+  }
+  .solver-list {
+    grid-template-columns: 1fr;
   }
 }
 </style>

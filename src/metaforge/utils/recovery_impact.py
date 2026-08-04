@@ -18,8 +18,11 @@ def _op_key(op: Dict[str, Any]) -> Tuple[int, int]:
 
 def _scenario_metrics(gantt: List[Dict[str, Any]], problem: Any, resource_config: Any) -> Dict[str, float]:
     m = compute_schedule_metrics(gantt, problem, resource_config=resource_config)
+    # 完工时间以甘特 max(end) 为准，避免与图上可见跨度不一致
+    ends = [float(op.get("end") or 0) for op in (gantt or [])]
+    gantt_ms = max(ends) if ends else 0.0
     return {
-        "makespan": float(m.get("makespan") or 0),
+        "makespan": float(gantt_ms if gantt_ms > 0 else (m.get("makespan") or 0)),
         "weighted_tardiness_total": float(m.get("weighted_tardiness_total") or 0),
     }
 

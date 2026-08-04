@@ -58,6 +58,24 @@ def _pick_best_schedule(schedule_results: Dict[str, Any]) -> tuple:
     return best_sid, best_entry
 
 
+def _unwrap_impact_report(impact_summary: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not impact_summary or not isinstance(impact_summary, dict):
+        return None
+    inner = impact_summary.get("impact_report")
+    if isinstance(inner, dict) and (inner.get("scenarios") or inner.get("event_type")):
+        return inner
+    if impact_summary.get("scenarios") or impact_summary.get("event_type"):
+        return impact_summary
+    return None
+
+
+def _scenario_makespan(scenarios: Dict[str, Any], key: str) -> Any:
+    sc = (scenarios or {}).get(key) or {}
+    if sc.get("makespan") is not None:
+        return sc.get("makespan")
+    return None
+
+
 def build_preview(
     *,
     plan_id: str,
@@ -67,6 +85,7 @@ def build_preview(
     has_existing_schedule: bool = False,
     previous_schedule: Optional[Dict[str, Any]] = None,
     jobs: Optional[List[Any]] = None,
+    impact_summary: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     metrics = schedule_result.get("metrics") or {}
     high_risk: List[Dict[str, Any]] = []
@@ -81,10 +100,11 @@ def build_preview(
                         "due_date": j.get("due_date"),
                     }
                 )
+    solver_id = schedule_result.get("id") or schedule_result.get("name")
     preview: Dict[str, Any] = {
         "plan_id": plan_id,
         "plan_name": plan_name,
-        "best_solver": schedule_result.get("id") or schedule_result.get("name"),
+        "best_solver": solver_id,
         "makespan": metrics.get("makespan"),
         "best_score": schedule_result.get("best_score"),
         "high_risk_jobs": high_risk[:10],
@@ -100,6 +120,35 @@ def build_preview(
         preview["previous_best_score"] = previous_schedule.get("best_score")
     if jobs is not None:
         preview["jobs_update_count"] = len(jobs)
+
+    impact = _unwrap_impact_report(impact_summary)
+    if impact:
+        scenarios = impact.get("scenarios") or {}
+        preview["event_type"] = impact.get("event_type")
+        preview["is_reschedule"] = True
+        preview["solver_role_zh"] = "本次重排算法"
+        preview["rescheduled_solver"] = (
+            impact.get("rescheduled_solver") or impact.get("baseline_solver") or solver_id
+        )
+        preview["best_solver"] = preview["rescheduled_solver"]
+        preview["r0_makespan"] = _scenario_makespan(scenarios, "r0")
+        preview["r1_makespan"] = _scenario_makespan(scenarios, "r1")
+        preview["r2_makespan"] = _scenario_makespan(scenarios, "r2")
+        if preview.get("r2_makespan") is not None and preview.get("makespan") is None:
+            preview["makespan"] = preview["r2_makespan"]
+        # 库中旧排程 vs R0（本次对照用的原计划）可能不同，一并展示
+        preview["r0_label"] = (scenarios.get("r0") or {}).get("label") or "原计划 R0"
+        preview["r1_label"] = (scenarios.get("r1") or {}).get("label") or "不重排 R1"
+        preview["r2_label"] = (scenarios.get("r2") or {}).get("label") or "重排 R2"
+        imp = impact.get("improvement_vs_r1") or {}
+        preview["improvement_vs_r1"] = {
+            "makespan_delta": imp.get("makespan_delta"),
+            "tardiness_delta": imp.get("tardiness_delta"),
+        }
+    else:
+        preview["is_reschedule"] = False
+        preview["solver_role_zh"] = "推荐算法"
+
     return preview
 
 
@@ -128,6 +177,7 @@ def propose_persist(
         has_existing_schedule=has_existing_schedule,
         previous_schedule=previous_schedule,
         jobs=jobs,
+        impact_summary=impact_summary,
     )
     entry = {
         "plan_id": plan_id,
