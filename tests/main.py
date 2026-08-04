@@ -34,7 +34,7 @@ import motor.motor_asyncio
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -509,27 +509,50 @@ def fix_id(doc):
 
 # === 路由 ===
 
-@app.get("/")
-def read_root():
-    # 默认优先返回新前端构建产物
+# HTML 入口禁止浏览器缓存，避免「首次仍是旧包、刷新才变新」
+_HTML_NO_CACHE = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
+# 清掉本源旧 HTML 缓存（旧版整页曾以 200 被强缓存，不请求服务器就会一直「一开是旧页」）
+_CLEAR_SITE_CACHE = {
+    **_HTML_NO_CACHE,
+    "Clear-Site-Data": '"cache"',
+}
+
+
+def _serve_frontend_index():
+    """只托管 Vue 构建产物；旧版 templates/index.html 已移除。"""
     dist_index = BASE_DIR / "templates" / "dist" / "index.html"
     if dist_index.exists():
-        return FileResponse(str(dist_index))
+        return FileResponse(str(dist_index), headers=_HTML_NO_CACHE)
+    return {"error": "Frontend build not found. Run: cd frontend && npm run build"}
 
-    # 兼容旧版页面（仅兜底）
-    html_path = BASE_DIR / "templates" / "index.html"
-    if html_path.exists():
-        return FileResponse(str(html_path))
-    return {"message": "MetaForge Backend Running"}
+
+@app.get("/go")
+def cache_bust_enter():
+    """
+    强制清浏览器对本站的 HTTP 缓存后进入新前端。
+    若书签打开 / 或 /new-ui/ 仍是旧页，先访问一次本地址即可。
+    """
+    return RedirectResponse(
+        url="/new-ui/dashboard",
+        status_code=302,
+        headers=_CLEAR_SITE_CACHE,
+    )
+
+
+@app.get("/")
+def read_root():
+    return RedirectResponse(url="/go", status_code=302, headers=_HTML_NO_CACHE)
 
 
 @app.get("/new-ui")
 def read_new_ui():
-    """新前端独立入口（迁移中），避免影响旧版生产页面。"""
-    dist_index = BASE_DIR / "templates" / "dist" / "index.html"
-    if dist_index.exists():
-        return FileResponse(str(dist_index))
-    return {"error": "New UI build not found. Please run frontend build first."}
+    """无尾斜杠：走清缓存入口，避免命中旧文档缓存。"""
+    return RedirectResponse(url="/go", status_code=302, headers=_HTML_NO_CACHE)
 
 
 @app.get("/new-ui/{full_path:path}")
@@ -537,11 +560,11 @@ def read_new_ui_spa(full_path: str):
     """
     SPA history fallback:
     访问 /new-ui/aps、/new-ui/reports 等前端路由时，统一返回 index.html。
+    裸 /new-ui/ 仍可能被浏览器缓存成旧整页，故改走 /go 清缓存。
     """
-    dist_index = BASE_DIR / "templates" / "dist" / "index.html"
-    if dist_index.exists():
-        return FileResponse(str(dist_index))
-    return {"error": "New UI build not found. Please run frontend build first."}
+    if full_path.strip("/") == "":
+        return RedirectResponse(url="/go", status_code=302, headers=_HTML_NO_CACHE)
+    return _serve_frontend_index()
 
 
 @app.get("/api/benchmarks")
@@ -2344,6 +2367,7 @@ async def planning_run(body: Dict[str, Any] = Body(...)):
             allow_simulated=body.get("allow_simulated", True),
             preset_id=body.get("preset_id"),
             strategy=body.get("strategy"),
+            primary_solvers=body.get("primary_solvers") or body.get("solvers"),
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -2376,6 +2400,7 @@ async def planning_collab_run(body: Dict[str, Any] = Body(...)):
         llm_client=body.get("llm_client"),
         problem=body.get("problem"),
         parallel=bool(body.get("parallel", True)),
+        primary_solvers=body.get("primary_solvers") or body.get("solvers"),
     )
 
 
@@ -3410,7 +3435,7 @@ if __name__ == "__main__":
         raise SystemExit(1)
 
     print(f"MetaForge Backend (FastAPI+Motor) running on http://{_host}:{_port}")
-    print(f"  统一入口: http://{_host}:{_port}/new-ui/")
+    print(f"  统一入口: http://{_host}:{_port}/go  →  /new-ui/dashboard")
     print(f"  reload={_reload}  METAFORGE_RELOAD=1 可开启热重载（开发慎用，易堆积僵尸进程）")
     uvicorn.run(
         "main:app",
