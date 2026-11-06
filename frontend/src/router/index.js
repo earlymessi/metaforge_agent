@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '../views/Layout.vue'
 import DashboardView from '../views/DashboardView.vue'
 import APSView from '../views/APSView.vue'
+import FabResearchLabView from '../views/FabResearchLabView.vue'
 import AnalysisView from '../views/AnalysisView.vue'
 import EnergyView from '../views/EnergyView.vue'
 import DataCenterView from '../views/DataCenterView.vue'
@@ -24,6 +25,7 @@ export default createRouter({
         { path: 'dashboard', component: DashboardView },
         { path: 'database', component: DataCenterView },
         { path: 'aps', component: APSView },
+        { path: 'fab-lab', component: FabResearchLabView },
         { path: 'assistant', component: AgentChatView },
         { path: 'reports', component: AnalysisView },
         { path: 'compare', component: CompareView },

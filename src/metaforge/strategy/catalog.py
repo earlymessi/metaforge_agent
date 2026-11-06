@@ -31,8 +31,12 @@ SOFT_FOLDS_INTO: Dict[str, Optional[str]] = {
 }
 
 
-def list_constraint_catalog() -> List[Dict[str, Any]]:
-    """Return a short catalog table suitable for frontend display."""
+def list_constraint_catalog(domain: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Return a short catalog table suitable for frontend display.
+
+    Default (domain=None / non-fab): classic JSSP types only — unchanged.
+    domain == "fab": classic + FAB types (FAB entries carry domain="fab").
+    """
     hard = [
         {"type": t, "kind": "hard", "folds_into_objective": None}
         for t in sorted(HARD_CONSTRAINT_TYPES)
@@ -45,4 +49,9 @@ def list_constraint_catalog() -> List[Dict[str, Any]]:
         }
         for t in sorted(SOFT_CONSTRAINT_TYPES)
     ]
-    return hard + soft
+    catalog = hard + soft
+    if domain == "fab":
+        from metaforge.fab.catalog import list_fab_constraint_catalog
+
+        catalog = catalog + list_fab_constraint_catalog()
+    return catalog

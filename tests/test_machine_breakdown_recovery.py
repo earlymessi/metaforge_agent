@@ -124,3 +124,114 @@ def test_align_breakdown_times_uses_sim_when_llm_sent_zero():
     )
     assert p["breakdown_start"] == 10.0
     assert p["freeze_time"] == 10.0
+
+
+def _op_overlaps(op, b0, b1):
+    return float(op["start"]) < b1 - 1e-9 and float(op["end"]) > b0 + 1e-9
+
+
+def test_r2_must_not_schedule_over_breakdown_window():
+    """冻结时刻略晚于工序开工时，故障机台上跨故障窗的工序不得整段冻进 R2。"""
+    jobs = [
+        {
+            "name": "J1",
+            "priority": 10,
+            "tasks": [
+                {"name": "O1", "machine_id": 0, "duration": 8},
+                {"name": "O2", "machine_id": 2, "duration": 6},
+            ],
+        },
+        {
+            "name": "J2",
+            "priority": 10,
+            "tasks": [
+                {"name": "O1", "machine_id": 1, "duration": 7},
+                {"name": "O2", "machine_id": 3, "duration": 5},
+            ],
+        },
+    ]
+    baseline_gantt = [
+        {"job_id": 0, "machine_id": 0, "operation_id": 0, "start": 0.0, "end": 8.0, "job_name": "J1"},
+        {"job_id": 0, "machine_id": 2, "operation_id": 1, "start": 8.0, "end": 14.0, "job_name": "J1"},
+        {"job_id": 1, "machine_id": 1, "operation_id": 0, "start": 0.0, "end": 7.0, "job_name": "J2"},
+        {"job_id": 1, "machine_id": 3, "operation_id": 1, "start": 7.0, "end": 12.0, "job_name": "J2"},
+    ]
+    b0, dur = 0.4, 4.0
+    b1 = b0 + dur
+
+    out = run_machine_breakdown(
+        jobs,
+        machine_id=0,
+        breakdown_start=b0,
+        breakdown_duration=dur,
+        freeze_time=b0,
+        baseline_gantt=baseline_gantt,
+        baseline_solver="spt",
+        solvers=["spt"],
+    )
+    assert "error" not in out, out
+    impact = out["data"]["impact_report"]
+    r2 = impact["r2_gantt"]
+
+    overlapping = [
+        op
+        for op in r2
+        if int(op["machine_id"]) == 0 and _op_overlaps(op, b0, b1)
+    ]
+    assert overlapping == [], f"R2 不得覆盖故障窗 [{b0},{b1}]: {overlapping}"
+
+
+def test_r2_can_start_early_on_alternate_machine():
+    """有替代机台时，残段应可在 freeze 后立刻上替代机，不必干等到故障结束。"""
+    jobs = [
+        {
+            "name": "J1",
+            "priority": 10,
+            "tasks": [
+                {
+                    "name": "O1",
+                    "machine_id": 0,
+                    "machine_options": [0, 4],
+                    "duration": 8,
+                },
+                {"name": "O2", "machine_id": 2, "duration": 6},
+            ],
+        },
+        {
+            "name": "J2",
+            "priority": 10,
+            "tasks": [
+                {"name": "O1", "machine_id": 1, "duration": 7},
+                {"name": "O2", "machine_id": 3, "duration": 5},
+            ],
+        },
+    ]
+    baseline_gantt = [
+        {"job_id": 0, "machine_id": 0, "operation_id": 0, "start": 0.0, "end": 8.0, "job_name": "J1"},
+        {"job_id": 0, "machine_id": 2, "operation_id": 1, "start": 8.0, "end": 14.0, "job_name": "J1"},
+        {"job_id": 1, "machine_id": 1, "operation_id": 0, "start": 0.0, "end": 7.0, "job_name": "J2"},
+        {"job_id": 1, "machine_id": 3, "operation_id": 1, "start": 7.0, "end": 12.0, "job_name": "J2"},
+    ]
+    b0, dur = 0.3, 4.0
+    out = run_machine_breakdown(
+        jobs,
+        machine_id=0,
+        breakdown_start=b0,
+        breakdown_duration=dur,
+        freeze_time=b0,
+        baseline_gantt=baseline_gantt,
+        baseline_solver="spt",
+        solvers=["spt"],
+    )
+    assert "error" not in out, out
+    r2 = out["data"]["impact_report"]["r2_gantt"]
+    j1_first = next(
+        op
+        for op in r2
+        if int(op["job_id"]) == 0 and int(op.get("operation_id", 0)) == 0
+    )
+    assert int(j1_first["machine_id"]) != 0, j1_first
+    assert float(j1_first["start"]) <= b0 + 1e-6, (
+        f"有替代机时应约从 freeze={b0} 开工，实际 start={j1_first['start']}"
+    )
+    assert not _op_overlaps(j1_first, b0, b0 + dur) or int(j1_first["machine_id"]) != 0

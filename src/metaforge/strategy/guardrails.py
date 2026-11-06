@@ -91,6 +91,7 @@ def validate_strategy(
     workers: Optional[Iterable[Any]] = None,
     tools: Optional[Iterable[Any]] = None,
     allow_simulated: bool = True,
+    domain: Optional[str] = None,
 ) -> Tuple[bool, List[str], SchedulingStrategy]:
     errors: List[str] = []
     fixed = deepcopy(strategy)
@@ -99,23 +100,32 @@ def validate_strategy(
     job_ids = _job_ids(jobs)
     machine_ids = _machine_ids(machines)
 
+    hard_allowed = set(HARD_CONSTRAINT_TYPES)
+    soft_allowed = set(SOFT_CONSTRAINT_TYPES)
+    if domain == "fab":
+        from metaforge.fab.catalog import FAB_HARD_CONSTRAINT_TYPES, FAB_SOFT_CONSTRAINT_TYPES
+
+        hard_allowed |= FAB_HARD_CONSTRAINT_TYPES
+        soft_allowed |= FAB_SOFT_CONSTRAINT_TYPES
+
     for constraint in strategy.hard_constraints:
-        if constraint.type not in HARD_CONSTRAINT_TYPES:
+        if constraint.type not in hard_allowed:
             errors.append(f"Unknown hard constraint type: {constraint.type}")
             continue
-        _validate_hard_constraint(
-            constraint,
-            job_ids=job_ids,
-            machine_ids=machine_ids,
-            workers=workers,
-            tools=tools,
-            allow_simulated=allow_simulated,
-            errors=errors,
-            simulated_fields=simulated_fields,
-        )
+        if constraint.type in HARD_CONSTRAINT_TYPES:
+            _validate_hard_constraint(
+                constraint,
+                job_ids=job_ids,
+                machine_ids=machine_ids,
+                workers=workers,
+                tools=tools,
+                allow_simulated=allow_simulated,
+                errors=errors,
+                simulated_fields=simulated_fields,
+            )
 
     for constraint in strategy.soft_constraints:
-        if constraint.type not in SOFT_CONSTRAINT_TYPES:
+        if constraint.type not in soft_allowed:
             errors.append(f"Unknown soft constraint type: {constraint.type}")
 
     fixed.provenance = dict(fixed.provenance)

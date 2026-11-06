@@ -108,9 +108,10 @@ def build_for_strategy_generation(
     order_analysis: Optional[Dict[str, Any]] = None,
     constraint_analysis: Optional[Dict[str, Any]] = None,
     resource_analysis: Optional[Dict[str, Any]] = None,
+    domain: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build a fixed-budget context dict for strategy generation prompts."""
-    catalog = list_constraint_catalog()
+    catalog = list_constraint_catalog(domain=domain)
     constraint_catalog_short = [
         {"type": entry["type"], "kind": entry["kind"]} for entry in catalog
     ]

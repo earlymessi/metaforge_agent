@@ -761,19 +761,20 @@ function renderGantt() {
       : null
   )
   if (bw && bw.machine_id != null) {
-    const yIdx = machines.indexOf(Number(bw.machine_id))
-    if (yIdx >= 0) {
+    const mid = Number(bw.machine_id)
+    if (machines.map(Number).includes(mid)) {
+      const y = `M-${mid}`
       markAreas.push([
-        { xAxis: bw.start, yAxis: yIdx - 0.4, itemStyle: { color: 'rgba(245,108,108,0.35)' } },
-        { xAxis: bw.end, yAxis: yIdx + 0.4 },
+        { xAxis: bw.start, yAxis: y, itemStyle: { color: 'rgba(245,108,108,0.45)' } },
+        { xAxis: bw.end, yAxis: y },
       ])
     }
   }
   const freezeT = layers?.freeze_time ?? store.impactReport?.freeze_time
-  if (freezeT != null && Number(freezeT) > 0) {
+  if (freezeT != null && Number(freezeT) > 0 && machines.length) {
     markAreas.push([
-      { xAxis: 0, yAxis: -0.5, itemStyle: { color: 'rgba(144,147,153,0.18)' } },
-      { xAxis: freezeT, yAxis: machines.length - 0.5 },
+      { xAxis: 0, yAxis: `M-${machines[0]}`, itemStyle: { color: 'rgba(144,147,153,0.18)' } },
+      { xAxis: freezeT, yAxis: `M-${machines[machines.length - 1]}` },
     ])
   }
   if (markAreas.length) {
@@ -782,6 +783,8 @@ function renderGantt() {
       type: 'line',
       data: [],
       markArea: { silent: true, data: markAreas },
+      tooltip: { show: false },
+      legendHoverLink: false,
     })
   }
 

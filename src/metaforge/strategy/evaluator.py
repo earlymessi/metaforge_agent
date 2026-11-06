@@ -255,6 +255,8 @@ def evaluate_candidates(
     candidates: List[Dict[str, Any]],
     *,
     jobs: Optional[Iterable[Any]] = None,
+    domain: Optional[str] = None,
+    fab_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     job_dues = _job_due_dates(jobs)
     warnings: List[str] = []
@@ -274,6 +276,18 @@ def evaluate_candidates(
             job_dues=job_dues,
             warnings=warnings,
         )
+        if domain == "fab":
+            from metaforge.fab.evaluate import check_hard as fab_check_hard
+
+            fab_ok, fab_violations = fab_check_hard(
+                strategy,
+                candidate,
+                fab_meta=fab_meta,
+                jobs=jobs,
+            )
+            hard_ok = hard_ok and fab_ok
+            hard_violations = list(hard_violations) + list(fab_violations)
+
         for violation in hard_violations:
             all_hard_violations.append({"schedule_id": schedule_id, **violation})
 

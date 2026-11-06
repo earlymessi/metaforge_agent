@@ -1,5 +1,7 @@
 # S4 仿真对接 + 扰动剧本 + R0/R1/R2 对比 实现计划
 
+> **后续变更：** P1 扰动剧本（`metaforge.scenario` / `ScenarioPanel` / `/api/scenarios*`）已从代码库移除，由看板「预约动态事件」替代。
+
 > **面向 AI 代理的工作者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐任务实现此计划。步骤使用复选框（`- [ ]`）语法来跟踪进度。
 
 **目标：** 薄适配打通 Package→MES 执行仿真、可配置扰动剧本、独立 R0/R1/R2 三甘特对比页与导出；按 P0→P1→P2 分期可验收交付。

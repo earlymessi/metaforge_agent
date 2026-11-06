@@ -11,6 +11,11 @@
               <el-radio-button label="custom">自定义/数据库</el-radio-button>
             </el-radio-group>
           </div>
+          <div class="fab-lab-hint">
+            半导体 Mini-Fab 研究请前往
+            <router-link to="/fab-lab">FAB 研究台</router-link>
+            （业务→建模→专用求解，与通用 APS 分离）
+          </div>
           <div v-if="inputMode === 'custom'" class="plan-bar">
             <span class="plan-bar-label">当前计划</span>
             <el-select
@@ -714,18 +719,23 @@ function addTask(jobIdx) {
 }
 
 function mapTaskPayload(t, job) {
-  const machineOptions = parseMachineOptions(t.machine_options_text, t.machine_id)
+  const machineOptions = Array.isArray(t.machine_options) && t.machine_options.length
+    ? t.machine_options.map((x) => Number(x)).filter((n) => Number.isInteger(n) && n >= 0)
+    : parseMachineOptions(t.machine_options_text, t.machine_id)
   const payload = {
     name: t.name,
     duration: Number(t.duration || 1),
     machine_id: Number.isInteger(t.machine_id) ? t.machine_id : (machineOptions[0] ?? 0),
-    machine_options: machineOptions,
+    machine_options: machineOptions.length ? machineOptions : parseMachineOptions(t.machine_options_text, t.machine_id),
     machine_group: t.machine_group || null,
   }
   const qty = t.quantity ?? job?.quantity
   if (qty != null && qty !== '') payload.quantity = Number(qty)
   if (t.setup_time != null && t.setup_time !== '') payload.setup_time = Number(t.setup_time)
   if (t.unit_time != null && t.unit_time !== '') payload.unit_time = Number(t.unit_time)
+  if (t.process_area != null) payload.process_area = t.process_area
+  if (t.layer_index != null) payload.layer_index = t.layer_index
+  if (t.is_dedication_mark != null) payload.is_dedication_mark = !!t.is_dedication_mark
   return payload
 }
 
@@ -734,6 +744,7 @@ function buildPlanningJobs() {
     return customJobs.value.map((j) => {
       const payload = mapJobPayload(j)
       payload.job_id = j.job_id || j.name
+      if (j.family_id != null) payload.family_id = j.family_id
       return payload
     })
   }
@@ -760,6 +771,8 @@ function mapJobPayload(j) {
     due_date: j.due_date ?? null,
     tasks: (j.tasks || []).map((t) => mapTaskPayload(t, j)),
   }
+  if (j.job_id != null) job.job_id = j.job_id
+  if (j.family_id != null) job.family_id = j.family_id
   if (j.quantity != null && j.quantity !== '') job.quantity = Number(j.quantity)
   if (j.material_arrival != null && j.material_arrival !== '') job.material_arrival = Number(j.material_arrival)
   if (Array.isArray(j.bom) && j.bom.length) {
@@ -843,6 +856,8 @@ function parseMachineOptions(text, fallbackMachineId) {
 function normalizeJobs(rawJobs) {
   return (rawJobs || []).map((job) => ({
     ...job,
+    job_id: job.job_id || job.name,
+    family_id: job.family_id,
     priority: Number(job.priority || 10),
     due_date: job.due_date === null || job.due_date === undefined || job.due_date === ''
       ? null
@@ -857,9 +872,10 @@ function normalizeJobs(rawJobs) {
       const machineOptions = Array.isArray(t.machine_options) ? t.machine_options : null
       const machineId = Number.isInteger(t.machine_id) ? t.machine_id : (Array.isArray(machineOptions) && machineOptions.length ? Number(machineOptions[0]) : 0)
       const optionsText = machineOptions && machineOptions.length ? machineOptions.join(',') : String(machineId)
-      return {
+      const task = {
         name: t.name || `Op-${idx + 1}`,
         machine_id: machineId,
+        machine_options: machineOptions || [machineId],
         machine_options_text: optionsText,
         machine_group: t.machine_group || '',
         duration: Number(t.duration || 1),
@@ -867,6 +883,10 @@ function normalizeJobs(rawJobs) {
         unit_time: t.unit_time ?? null,
         quantity: t.quantity ?? null,
       }
+      if (t.process_area != null) task.process_area = t.process_area
+      if (t.layer_index != null) task.layer_index = t.layer_index
+      if (t.is_dedication_mark != null) task.is_dedication_mark = !!t.is_dedication_mark
+      return task
     }),
   }))
 }
@@ -1282,8 +1302,9 @@ async function run() {
       weights: { ...DEFAULT_WEIGHTS },
     }
     store.setSchedulingStrategy('', '')
-    if (inputMode.value === 'file') payload.benchmark_file = selectedBenchmark.value
-    else {
+    if (inputMode.value === 'file') {
+      payload.benchmark_file = selectedBenchmark.value
+    } else {
       payload.custom_data = customJobs.value.map((j) => mapJobPayload(j))
       payload.enforce_material = enforceMaterial.value
     }
@@ -1428,6 +1449,13 @@ onMounted(async () => {
 .plan-bar-select { width: min(280px, 100%); }
 .plan-bar-name { width: min(200px, 100%); }
 .plan-pool-banner { margin-bottom: 10px; }
+.fab-lab-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #606266;
+  line-height: 1.5;
+}
+.fab-lab-hint a { color: #409eff; font-weight: 600; }
 .plan-empty-hint { margin: 16px 0; }
 .toolbar { margin-bottom: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .toolbar-lite { margin-bottom: 8px; }

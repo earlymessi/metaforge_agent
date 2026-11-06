@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, List, Optional
 
 from metaforge.agents.base import AgentRequest, AgentResponse, BaseAgent, PlanStep
-from metaforge.planning_collab.supervisor import run_collab
+
+from metaforge.harness.skill import invoke_skill
+from metaforge.skills.planning_collab import ensure_registered
 
 
 class SchedulingCollabBridge(BaseAgent):
@@ -57,7 +59,9 @@ class SchedulingCollabBridge(BaseAgent):
         if on_step_start:
             on_step_start({"step_id": "collab", "tool": "planning.collab.run"})
 
-        out = run_collab(
+        ensure_registered()
+        out = invoke_skill(
+            "planning_collab",
             user_goal=user_goal,
             jobs=jobs,
             machines=machines,

@@ -223,15 +223,452 @@ async def reset_execution(execution_coll) -> None:
     await execution_coll.delete_one({"_id": ACTIVE_ID})
 
 
+SUPPORTED_SCHEDULED_EVENTS = frozenset(
+    {
+        "machine_breakdown",
+        "insert_order",
+        "due_date_change",
+        "planned_downtime",
+        "material_delay",
+        "priority_change",
+        "order_cancel",
+        "quantity_change",
+    }
+)
+
+EVENT_LABELS_ZH = {
+    "machine_breakdown": "设备故障",
+    "insert_order": "插单",
+    "due_date_change": "改交期",
+    "planned_downtime": "计划停机",
+    "material_delay": "物料晚到",
+    "priority_change": "调整优先级",
+    "order_cancel": "撤单",
+    "quantity_change": "数量变更",
+}
+
+
 async def get_state(execution_coll) -> Dict[str, Any]:
     doc = await get_active(execution_coll)
     if not doc:
         return idle_state()
     if doc.get("status") == "running":
         doc = await tick_sim_time(execution_coll, doc)
+        doc = await maybe_fire_scheduled_event(execution_coll, doc)
+    out = dict(doc)
+    out["time_unit"] = "h"
+    # 兼容旧前端：把 scheduled_event 镜像成 scheduled_breakdown（仅故障）
+    se = out.get("scheduled_event")
+    if isinstance(se, dict) and se.get("event_type") == "machine_breakdown":
+        params = se.get("params") or {}
+        out["scheduled_breakdown"] = {
+            "machine_id": params.get("machine_id"),
+            "breakdown_start": se.get("trigger_at", params.get("breakdown_start")),
+            "breakdown_duration": params.get("breakdown_duration"),
+            "status": se.get("status"),
+            "summary_zh": se.get("summary_zh"),
+            "error": se.get("error"),
+            "fired_at_sim": se.get("fired_at_sim"),
+        }
+    return out
+
+
+def _legacy_breakdown_as_event(sb: Dict[str, Any]) -> Dict[str, Any]:
+    """旧 scheduled_breakdown → scheduled_event。"""
+    start = sb.get("breakdown_start")
+    return {
+        "event_type": "machine_breakdown",
+        "trigger_at": start,
+        "params": {
+            "machine_id": sb.get("machine_id"),
+            "breakdown_start": start,
+            "breakdown_duration": sb.get("breakdown_duration"),
+        },
+        "status": sb.get("status") or "pending",
+        "summary_zh": sb.get("summary_zh"),
+        "error": sb.get("error"),
+        "fired_at_sim": sb.get("fired_at_sim"),
+    }
+
+
+def get_scheduled_event(doc: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    se = doc.get("scheduled_event")
+    if isinstance(se, dict) and se.get("event_type"):
+        return se
+    sb = doc.get("scheduled_breakdown")
+    if isinstance(sb, dict) and sb.get("status"):
+        return _legacy_breakdown_as_event(sb)
+    return None
+
+
+def _scheduled_event_ready(doc: Dict[str, Any]) -> bool:
+    se = get_scheduled_event(doc)
+    if not se or se.get("status") != "pending":
+        return False
+    if doc.get("status") != "running":
+        return False
+    try:
+        trigger = float(se.get("trigger_at"))
+        sim = float(doc.get("sim_time") or 0)
+    except (TypeError, ValueError):
+        return False
+    return sim + 1e-9 >= trigger
+
+
+def _validate_scheduled_params(event_type: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    p = dict(params or {})
+    if event_type == "machine_breakdown":
+        if p.get("machine_id") is None:
+            raise ValueError("machine_breakdown requires machine_id")
+        if p.get("breakdown_duration") is None:
+            raise ValueError("machine_breakdown requires breakdown_duration")
+        if float(p["breakdown_duration"]) <= 0:
+            raise ValueError("breakdown_duration must be > 0")
+        p["machine_id"] = int(p["machine_id"])
+        p["breakdown_duration"] = float(p["breakdown_duration"])
+    elif event_type == "insert_order":
+        if not isinstance(p.get("insert_job"), dict):
+            raise ValueError("insert_order requires insert_job")
+        p.setdefault("mode", "local_repair")
+    elif event_type == "due_date_change":
+        if not p.get("due_date_changes"):
+            raise ValueError("due_date_change requires due_date_changes")
+    elif event_type == "planned_downtime":
+        if not p.get("downtime_blocks"):
+            raise ValueError("planned_downtime requires downtime_blocks")
+    elif event_type == "material_delay":
+        if not p.get("job_name"):
+            raise ValueError("material_delay requires job_name")
+        p["delay_hours"] = float(p.get("delay_hours") or 0)
+    elif event_type == "priority_change":
+        if not p.get("changes"):
+            raise ValueError("priority_change requires changes")
+    elif event_type == "order_cancel":
+        if not p.get("job_names"):
+            raise ValueError("order_cancel requires job_names")
+    elif event_type == "quantity_change":
+        if not p.get("changes"):
+            raise ValueError("quantity_change requires changes")
+    return p
+
+
+def _enrich_params_at_fire(
+    event_type: str,
+    params: Dict[str, Any],
+    *,
+    trigger_at: float,
+    sim_time: float,
+) -> Dict[str, Any]:
+    p = dict(params or {})
+    if event_type == "machine_breakdown":
+        p.setdefault("breakdown_start", trigger_at)
+        p.setdefault("freeze_time", sim_time)
+    elif event_type == "insert_order":
+        p.setdefault("freeze_time", sim_time)
+    elif event_type == "planned_downtime":
+        blocks = list(p.get("downtime_blocks") or [])
+        for b in blocks:
+            if isinstance(b, dict):
+                b.setdefault("start", trigger_at)
+                if b.get("end") is None and b.get("duration") is not None:
+                    b["end"] = float(b["start"]) + float(b["duration"])
+        p["downtime_blocks"] = blocks
+    return p
+
+
+def _summary_for_schedule(event_type: str, trigger_at: float, params: Dict[str, Any]) -> str:
+    label = EVENT_LABELS_ZH.get(event_type, event_type)
+    if event_type == "machine_breakdown":
+        mid = params.get("machine_id")
+        dur = params.get("breakdown_duration")
+        return f"已预约：{label}（{mid}号机，{dur:g}h）@ {trigger_at:g}h，仿真到达后自动重排"
+    if event_type == "material_delay":
+        return f"已预约：{label}（{params.get('job_name')}）@ {trigger_at:g}h"
+    if event_type == "insert_order":
+        name = (params.get("insert_job") or {}).get("name") or "急单"
+        return f"已预约：{label}「{name}」@ {trigger_at:g}h"
+    return f"已预约：{label} @ {trigger_at:g}h，仿真到达后自动重排"
+
+
+async def schedule_event(
+    execution_coll,
+    *,
+    event_type: str,
+    trigger_at: float,
+    params: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """预约动态事件：仿真时钟到达 trigger_at 时自动重排（非 Agent，事件注入器）。"""
+    et = str(event_type or "").strip()
+    if et not in SUPPORTED_SCHEDULED_EVENTS:
+        raise ValueError(f"unsupported event_type: {et}")
+    doc = await get_active(execution_coll)
+    if not doc or doc.get("status") not in ("running", "paused"):
+        raise ValueError("no active execution; start MES first")
+    start = float(trigger_at)
+    if start < 0:
+        raise ValueError("trigger_at must be >= 0")
+    validated = _validate_scheduled_params(et, params or {})
+    if et == "machine_breakdown":
+        validated.setdefault("breakdown_start", start)
+
+    summary = _summary_for_schedule(et, start, validated)
+    se = {
+        "event_type": et,
+        "trigger_at": start,
+        "params": validated,
+        "status": "pending",
+        "summary_zh": summary,
+        "error": None,
+    }
+    doc = copy.deepcopy(doc)
+    doc["scheduled_event"] = se
+    # 故障时双写旧字段，兼容未刷新的前端
+    if et == "machine_breakdown":
+        doc["scheduled_breakdown"] = {
+            "machine_id": validated.get("machine_id"),
+            "breakdown_start": start,
+            "breakdown_duration": validated.get("breakdown_duration"),
+            "status": "pending",
+            "summary_zh": summary,
+            "error": None,
+        }
+    else:
+        doc.pop("scheduled_breakdown", None)
+    doc.pop("auto_reschedule_notify", None)
+    doc["updated_at_wall"] = datetime.now(timezone.utc).isoformat()
+    await execution_coll.replace_one({"_id": ACTIVE_ID}, doc, upsert=True)
     out = dict(doc)
     out["time_unit"] = "h"
     return out
+
+
+async def schedule_breakdown(
+    execution_coll,
+    *,
+    machine_id: int,
+    breakdown_start: float,
+    breakdown_duration: float,
+) -> Dict[str, Any]:
+    """兼容旧 API：预约设备故障。"""
+    return await schedule_event(
+        execution_coll,
+        event_type="machine_breakdown",
+        trigger_at=float(breakdown_start),
+        params={
+            "machine_id": int(machine_id),
+            "breakdown_start": float(breakdown_start),
+            "breakdown_duration": float(breakdown_duration),
+        },
+    )
+
+
+async def cancel_scheduled_event(execution_coll) -> Dict[str, Any]:
+    doc = await get_active(execution_coll)
+    if not doc or doc.get("status") == "idle":
+        raise ValueError("no active execution")
+    doc = copy.deepcopy(doc)
+    se = doc.get("scheduled_event")
+    if isinstance(se, dict) and se.get("status") == "pending":
+        doc["scheduled_event"] = {**se, "status": "cancelled"}
+    sb = doc.get("scheduled_breakdown")
+    if isinstance(sb, dict) and sb.get("status") == "pending":
+        doc["scheduled_breakdown"] = {**sb, "status": "cancelled"}
+    doc["updated_at_wall"] = datetime.now(timezone.utc).isoformat()
+    await execution_coll.replace_one({"_id": ACTIVE_ID}, doc, upsert=True)
+    out = dict(doc)
+    out["time_unit"] = "h"
+    return out
+
+
+async def cancel_scheduled_breakdown(execution_coll) -> Dict[str, Any]:
+    return await cancel_scheduled_event(execution_coll)
+
+
+async def ack_auto_reschedule(execution_coll) -> Dict[str, Any]:
+    """前端已消费自动重排通知后清除，防止轮询重复弹窗。"""
+    doc = await get_active(execution_coll)
+    if not doc:
+        return idle_state()
+    doc = copy.deepcopy(doc)
+    notify = doc.get("auto_reschedule_notify")
+    if isinstance(notify, dict):
+        notify = {**notify, "acked": True}
+        doc["auto_reschedule_notify"] = notify
+    doc["updated_at_wall"] = datetime.now(timezone.utc).isoformat()
+    await execution_coll.replace_one({"_id": ACTIVE_ID}, doc, upsert=True)
+    out = dict(doc)
+    out["time_unit"] = "h"
+    return out
+
+
+async def _claim_scheduled_event(execution_coll, trigger_at: float) -> Optional[Dict[str, Any]]:
+    """CAS：pending → firing，避免并发 get_state 双触发。"""
+    from pymongo import ReturnDocument
+
+    # 优先认领 scheduled_event；兼容仅有旧 scheduled_breakdown 的文档
+    claimed = await execution_coll.find_one_and_update(
+        {
+            "_id": ACTIVE_ID,
+            "status": "running",
+            "scheduled_event.status": "pending",
+            "sim_time": {"$gte": float(trigger_at) - 1e-9},
+        },
+        {
+            "$set": {
+                "scheduled_event.status": "firing",
+                "updated_at_wall": datetime.now(timezone.utc).isoformat(),
+            }
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+    if claimed:
+        return claimed
+
+    return await execution_coll.find_one_and_update(
+        {
+            "_id": ACTIVE_ID,
+            "status": "running",
+            "scheduled_breakdown.status": "pending",
+            "sim_time": {"$gte": float(trigger_at) - 1e-9},
+        },
+        {
+            "$set": {
+                "scheduled_breakdown.status": "firing",
+                "updated_at_wall": datetime.now(timezone.utc).isoformat(),
+            }
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+
+
+async def maybe_fire_scheduled_event(execution_coll, doc: Dict[str, Any]) -> Dict[str, Any]:
+    """仿真时刻越过预约事件 → 自动 dispatch 重排并暂停等待 HITL。"""
+    if not _scheduled_event_ready(doc):
+        return doc
+
+    se0 = get_scheduled_event(doc) or {}
+    try:
+        trigger_at = float(se0.get("trigger_at"))
+    except (TypeError, ValueError):
+        return doc
+
+    claimed = await _claim_scheduled_event(execution_coll, trigger_at)
+    if not claimed:
+        fresh = await get_active(execution_coll)
+        return fresh or doc
+
+    se = get_scheduled_event(claimed) or dict(se0)
+    et = str(se.get("event_type") or "machine_breakdown")
+    label = EVENT_LABELS_ZH.get(et, et)
+    sim = float(claimed.get("sim_time") or trigger_at)
+    params = _enrich_params_at_fire(
+        et,
+        se.get("params") or {},
+        trigger_at=trigger_at,
+        sim_time=sim,
+    )
+
+    try:
+        from metaforge.services.event_reschedule import dispatch_event_reschedule
+        from metaforge.utils.bson_safe import to_bson_safe
+
+        envelope = {
+            "event_type": et,
+            "base_jobs": list(claimed.get("jobs_snapshot") or []),
+            "params": params,
+            "reschedule_options": {
+                "solvers": [claimed["baseline_solver"]] if claimed.get("baseline_solver") else None,
+                "weights": claimed.get("weights"),
+                "baseline_gantt": claimed.get("baseline_gantt"),
+                "baseline_solver": claimed.get("baseline_solver"),
+                "freeze_time": sim,
+                "mode": params.get("mode"),
+            },
+            "production_execution": claimed,
+        }
+        raw = dispatch_event_reschedule(envelope)
+        if raw.get("error"):
+            raise RuntimeError(str(raw.get("error")))
+
+        data = raw.get("data") or {}
+        await sync_execution_after_event_reschedule(execution_coll, data, envelope)
+
+        fresh = await get_active(execution_coll)
+        if not fresh:
+            return claimed
+        fresh = copy.deepcopy(fresh)
+        now_iso = datetime.now(timezone.utc).isoformat()
+        if fresh.get("status") == "running":
+            fresh["status"] = "paused"
+            fresh["sim_time_frozen"] = float(fresh.get("sim_time") or sim)
+            fresh["paused_at_wall"] = now_iso
+
+        fired_at = float(fresh.get("sim_time") or sim)
+        se_done = {
+            **se,
+            "params": params,
+            "status": "fired",
+            "fired_at_sim": fired_at,
+            "summary_zh": f"{label}已自动触发重排（@{fired_at:.1f}h）",
+            "error": None,
+        }
+        summary = (
+            f"系统注入：{label} @ 仿真 {trigger_at:g}h，"
+            f"已自动完成重排并暂停执行，请确认是否落库。"
+        )
+        fresh["scheduled_event"] = se_done
+        if et == "machine_breakdown":
+            fresh["scheduled_breakdown"] = {
+                "machine_id": params.get("machine_id"),
+                "breakdown_start": trigger_at,
+                "breakdown_duration": params.get("breakdown_duration"),
+                "status": "fired",
+                "fired_at_sim": fired_at,
+                "summary_zh": se_done["summary_zh"],
+                "error": None,
+            }
+        fresh["auto_reschedule_notify"] = to_bson_safe(
+            {
+                "event_type": et,
+                "source": "scheduled_event",
+                "acked": False,
+                "fired_at_sim": fired_at,
+                "summary_zh": summary,
+                "result": raw,
+            }
+        )
+        fresh["updated_at_wall"] = now_iso
+        await execution_coll.replace_one({"_id": ACTIVE_ID}, fresh, upsert=True)
+        out = dict(fresh)
+        out["time_unit"] = "h"
+        return out
+    except Exception as exc:  # noqa: BLE001
+        fresh = await get_active(execution_coll) or claimed
+        fresh = copy.deepcopy(fresh)
+        failed = {
+            **se,
+            "status": "failed",
+            "error": str(exc),
+            "summary_zh": f"预约{label}自动重排失败：{exc}",
+        }
+        fresh["scheduled_event"] = failed
+        if et == "machine_breakdown":
+            fresh["scheduled_breakdown"] = {
+                **(fresh.get("scheduled_breakdown") or {}),
+                "status": "failed",
+                "error": str(exc),
+                "summary_zh": failed["summary_zh"],
+            }
+        fresh["updated_at_wall"] = datetime.now(timezone.utc).isoformat()
+        await execution_coll.replace_one({"_id": ACTIVE_ID}, fresh, upsert=True)
+        out = dict(fresh)
+        out["time_unit"] = "h"
+        return out
+
+
+# 旧名别名（测试/外部引用）
+_scheduled_breakdown_ready = _scheduled_event_ready
+maybe_fire_scheduled_breakdown = maybe_fire_scheduled_event
 
 
 async def sync_execution_after_event_reschedule(

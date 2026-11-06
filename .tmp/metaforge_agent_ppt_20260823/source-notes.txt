@@ -1,0 +1,30 @@
+Deck: MetaForge Multi-Agent 制造排程智能体系统
+Audience: Agent 开发岗位技术面试官
+Purpose: 在约 7 分钟内证明候选人具备多 Agent 架构、Tool Harness、Memory/HITL 与分层评测能力。
+Visual route: explicit custom direction — WPS academic preset / school academic light theme.
+
+WPS academic preset provenance:
+- cli-anything-wps preset info academic
+- Primary: #1A3C8B
+- Secondary: #E67733
+- Accent: #188050
+- Light: #F5F8FC
+- Background: #FFFFFF
+- Chinese font: Microsoft YaHei
+
+Content sources:
+- D:\Desktop\metaforge\docs\求职面试-PPT素材-MetaForge-Agent.md
+- D:\Desktop\metaforge\README.md
+- D:\Desktop\metaforge\src\metaforge\agents\registry_meta.py
+- D:\Desktop\metaforge\src\metaforge\orchestrator\router.py
+- D:\Desktop\metaforge\src\metaforge\orchestrator\preview.py
+- D:\Desktop\metaforge\src\metaforge\planning_collab\supervisor.py
+- D:\Desktop\metaforge\src\metaforge\harness\tool_executor.py
+- D:\Desktop\metaforge\src\metaforge\strategy\context_builder.py
+- D:\Desktop\metaforge\src\metaforge\services\event_reschedule.py
+- D:\Desktop\metaforge\reports\agent_e2e_l2_20260601-114642.json
+- D:\Desktop\metaforge\reports\agent_e2e_l3_20260601-125055.json
+- D:\Desktop\metaforge\reports\agent_e2e_l3_20260601-130930.json
+- D:\Desktop\metaforge\reports\glm_smoke_acceptance_20260531.json
+
+No externally sourced web assets or claims are used.

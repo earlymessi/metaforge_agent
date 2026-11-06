@@ -185,7 +185,13 @@ def _finish_planning(
         policy,
         job_aliases=problem_meta.get("job_aliases"),
     )
-    evaluation = evaluate_candidates(strategy, candidates, jobs=jobs)
+    evaluation = evaluate_candidates(
+        strategy,
+        candidates,
+        jobs=jobs,
+        domain=run.get("domain"),
+        fab_meta=run.get("fab_meta"),
+    )
     warnings.extend(evaluation.get("warnings") or [])
 
     package = {
@@ -233,14 +239,20 @@ def run_planning(
     preset_id: Optional[str] = None,
     strategy: Any = None,
     primary_solvers: Any = None,
+    domain: Optional[str] = None,
+    fab_meta: Optional[Dict[str, Any]] = None,
     **kwargs: Any,
 ) -> Dict[str, Any]:
+    domain = domain if domain is not None else kwargs.get("domain")
+    fab_meta = fab_meta if fab_meta is not None else kwargs.get("fab_meta")
     run = create_run(
         user_goal=user_goal,
         jobs=list(jobs or []),
         machines=list(machines or []),
         stage="generate",
         status="RUNNING",
+        domain=domain,
+        fab_meta=fab_meta,
     )
 
     if strategy is not None:

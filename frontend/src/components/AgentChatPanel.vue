@@ -133,7 +133,7 @@
 </template>
 
 <script setup>
-import { defineComponent, h, nextTick, onMounted, ref } from 'vue'
+import { defineComponent, h, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElTag } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
@@ -148,6 +148,7 @@ import {
   scheduleResultsFromArtifacts,
 } from '../utils/planScheduleSync'
 import { applyMesEventArtifactsToStore } from '../utils/mesEventSync'
+import { useAssistantStore } from '../stores/useAssistantStore'
 import PersistConfirmDialog from './PersistConfirmDialog.vue'
 import AgentResultCards from './AgentResultCards.vue'
 
@@ -161,6 +162,7 @@ defineProps({
 const router = useRouter()
 const workStore = useWorkContextStore()
 const resultsStore = useResultsStore()
+const assistantStore = useAssistantStore()
 const {
   planOptions,
   plansLoading,
@@ -506,9 +508,26 @@ async function onPersistConfirmed(data) {
   ElMessage.success('落库成功')
 }
 
+async function drainSystemNotices() {
+  while (assistantStore.systemNotices.length) {
+    const n = assistantStore.shiftSystemNotice()
+    if (!n?.text) continue
+    messages.value.push({ role: 'assistant', text: n.text })
+  }
+  await scrollBottom()
+}
+
+watch(
+  () => assistantStore.systemNotices.length,
+  () => {
+    drainSystemNotices()
+  },
+)
+
 onMounted(async () => {
   syncSelectedFromStore()
   fetchPlans()
+  drainSystemNotices()
   try {
     const { data } = await api.get('/api/llm/status')
     llmStatus.value = data

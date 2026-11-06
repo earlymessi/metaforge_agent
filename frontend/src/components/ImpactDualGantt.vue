@@ -64,7 +64,13 @@ const captionText = computed(() => {
   if (props.eventType === 'due_date_change') {
     return '左：仅更新交期、排程时间不变；右：按新交期重调度。左图蓝框为改期工单，右图蓝框为相对原计划调整的工序。'
   }
-  return '左：故障后仅时间推演（不调用求解器重排）；右：冻结已开工 + 原算法残段重排。红区为故障窗口，蓝框为相对原计划调整的工序。'
+  if (props.eventType === 'machine_breakdown') {
+    return '左：故障后仅时间推演（不调用求解器重排）；右：冻结已开工 + 原算法残段重排。红色虚线框「故障」为故障窗口，蓝框为相对原计划调整的工序。'
+  }
+  if (props.eventType === 'planned_downtime') {
+    return '左：原计划；右：加入计划停机后重排。橙色虚线框为停机窗口，蓝框为相对原计划调整的工序。'
+  }
+  return '左：事件前原计划；右：事件后重排。蓝框为相对原计划调整的工序。'
 })
 
 const leftHighlightKeys = computed(() => {

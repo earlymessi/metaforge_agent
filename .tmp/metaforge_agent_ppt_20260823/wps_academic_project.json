@@ -1,0 +1,21 @@
+{
+  "design": {
+    "preset": "academic",
+    "talk_type": "defense"
+  },
+  "metadata": {
+    "author": "",
+    "created": "2026-08-23T23:03:54.238483",
+    "description": "",
+    "modified": "2026-08-23T23:03:54.564548",
+    "software": "cli-anything-wps 1.0.0",
+    "subject": "",
+    "title": "MetaForge Agent Interview"
+  },
+  "name": "MetaForge Agent Interview",
+  "settings": {},
+  "slides": [],
+  "styles": {},
+  "type": "impress",
+  "version": "1.0"
+}

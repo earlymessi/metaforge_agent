@@ -28,8 +28,10 @@ def test_bridge_run_calls_collab(monkeypatch):
         }
 
     monkeypatch.setattr(
-        "metaforge.agents.scheduling_collab_bridge.run_collab", fake_collab
+        "metaforge.agents.scheduling_collab_bridge.invoke_skill",
+        lambda skill_id, **kwargs: fake_collab(**kwargs),
     )
+
     agent = get_agent("scheduling")
     resp = agent.run(
         AgentRequest(

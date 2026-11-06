@@ -236,9 +236,9 @@ def generate_strategy(
     constraint_analysis: Optional[Dict[str, Any]] = None,
     resource_analysis: Optional[Dict[str, Any]] = None,
 ) -> Tuple[SchedulingStrategy, Dict[str, Any]]:
-    from metaforge.strategy.context_builder import build_for_strategy_generation
+    from metaforge.harness.context import compile_planning_context
 
-    context = build_for_strategy_generation(
+    compiled = compile_planning_context(
         user_goal=user_goal,
         jobs=jobs,
         machines=machines,
@@ -248,8 +248,12 @@ def generate_strategy(
         constraint_analysis=constraint_analysis,
         resource_analysis=resource_analysis,
     )
+    context = compiled.to_prompt_dict()
 
-    meta: Dict[str, Any] = {"context": context}
+    meta: Dict[str, Any] = {
+        "context": context,
+        "context_hash": compiled.context_hash,
+    }
 
     strategy, llm_meta = _try_llm_strategy(
         llm_client=llm_client,

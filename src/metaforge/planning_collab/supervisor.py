@@ -6,6 +6,9 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
+from metaforge.harness.context import compile_planning_context
+from metaforge.harness.runtime import AgentRuntime
+from metaforge.harness.trace import merge_run_trace
 from metaforge.planning_collab.agents.constraint import run_constraint_agent
 from metaforge.planning_collab.agents.order import run_order_agent
 from metaforge.planning_collab.agents.resource import run_resource_agent
@@ -14,7 +17,6 @@ from metaforge.planning_collab.summarize import summarize_agent_result
 from metaforge.planning_collab.trace import build_collab_trace
 from metaforge.strategy.pipeline import run_planning
 from metaforge.strategy.run_state import get_run
-
 _COLLAB_STORE: Dict[str, Dict[str, Any]] = {}
 # Internal: AgentResult objects for collab_trace assembly (not API-facing).
 _AGENT_RESULTS_STORE: Dict[str, Dict[str, AgentResult]] = {}
@@ -24,23 +26,19 @@ def _fail_closed() -> bool:
     return os.getenv("COLLAB_FAIL_CLOSED", "0") == "1"
 
 
+def _events_payload(runtime: AgentRuntime) -> List[Dict[str, Any]]:
+    return [e.to_dict() for e in runtime.events]
+
+
 def _run_one(
+    runtime: AgentRuntime,
     agent_id: str,
     runner,
     task: AgentTask,
     llm_client: Any,
 ) -> AgentResult:
-    try:
-        result = runner(task)
-    except Exception as exc:  # noqa: BLE001 - degrade per-agent
-        return AgentResult(
-            agent_id=agent_id,
-            status="failed",
-            summary=f"{agent_id} failed: {exc}",
-            artifacts={},
-            warnings=[str(exc)],
-            reasoning_summary=None,
-        )
+    """Dispatch via Harness AgentRuntime; optional LLM summary on success."""
+    result = runtime.run_agent(task, runner)
     if result.status == "success" and result.artifacts:
         summary = summarize_agent_result(
             result.artifacts,
@@ -49,7 +47,6 @@ def _run_one(
         )
         result.reasoning_summary = summary
     return result
-
 
 def run_collab_analyze(
     *,
@@ -70,12 +67,26 @@ def run_collab_analyze(
     state.current_stage = "analyze"
     state.status = "RUNNING"
 
+    compiled = compile_planning_context(
+        user_goal=user_goal,
+        jobs=jobs_list,
+        machines=machines_list,
+    )
+    runtime = AgentRuntime()
+    runtime.emit(
+        "supervisor.start",
+        stage="analyze",
+        run_id=state.run_id,
+        task_id=state.task_id,
+        context_hash=compiled.context_hash,
+    )
+
     base_inputs = {
         "user_goal": user_goal,
         "jobs": jobs_list,
         "machines": machines_list,
+        "context_hash": compiled.context_hash,
     }
-
     order_task = AgentTask(
         task_id=f"{state.task_id}-order",
         agent_id="order",
@@ -87,7 +98,7 @@ def run_collab_analyze(
     # plan "可并行", we still allow parallel with empty order_analysis on
     # constraint — Supervisor merges after. Prefer sequential: order → others.
 
-    order_result = _run_one("order", run_order_agent, order_task, llm_client)
+    order_result = _run_one(runtime, "order", run_order_agent, order_task, llm_client)
 
     constraint_inputs = dict(base_inputs)
     if order_result.status == "success":
@@ -112,10 +123,20 @@ def run_collab_analyze(
         with ThreadPoolExecutor(max_workers=2) as pool:
             futures = {
                 pool.submit(
-                    _run_one, "constraint", run_constraint_agent, constraint_task, llm_client
+                    _run_one,
+                    runtime,
+                    "constraint",
+                    run_constraint_agent,
+                    constraint_task,
+                    llm_client,
                 ): "constraint",
                 pool.submit(
-                    _run_one, "resource", run_resource_agent, resource_task, llm_client
+                    _run_one,
+                    runtime,
+                    "resource",
+                    run_resource_agent,
+                    resource_task,
+                    llm_client,
                 ): "resource",
             }
             for fut in as_completed(futures):
@@ -123,10 +144,10 @@ def run_collab_analyze(
                 results[aid] = fut.result()
     else:
         results["constraint"] = _run_one(
-            "constraint", run_constraint_agent, constraint_task, llm_client
+            runtime, "constraint", run_constraint_agent, constraint_task, llm_client
         )
         results["resource"] = _run_one(
-            "resource", run_resource_agent, resource_task, llm_client
+            runtime, "resource", run_resource_agent, resource_task, llm_client
         )
 
     artifacts: Dict[str, Any] = {}
@@ -169,7 +190,17 @@ def run_collab_analyze(
             failed_agents=failed,
             warnings=warnings,
         )
+        runtime.emit(
+            "supervisor.end",
+            stage="analyze",
+            status="FAILED",
+            run_id=state.run_id,
+        )
+        run_events = _events_payload(runtime)
         snap["collab_trace"] = collab_trace
+        snap["run_events"] = run_events
+        snap["context_hash"] = compiled.context_hash
+        snap["compiled_context"] = compiled.to_dict()
         _COLLAB_STORE[state.run_id] = snap
         _AGENT_RESULTS_STORE[state.run_id] = results
         return {
@@ -181,6 +212,8 @@ def run_collab_analyze(
             "task_state": snap,
             "failed_agents": failed,
             "collab_trace": collab_trace,
+            "run_events": run_events,
+            "context_hash": compiled.context_hash,
         }
 
     state.artifacts = artifacts
@@ -198,7 +231,17 @@ def run_collab_analyze(
         failed_agents=failed,
         warnings=warnings,
     )
+    runtime.emit(
+        "supervisor.end",
+        stage="analyze",
+        status="ANALYZED",
+        run_id=state.run_id,
+    )
+    run_events = _events_payload(runtime)
     snap["collab_trace"] = collab_trace
+    snap["run_events"] = run_events
+    snap["context_hash"] = compiled.context_hash
+    snap["compiled_context"] = compiled.to_dict()
     _COLLAB_STORE[state.run_id] = snap
     _AGENT_RESULTS_STORE[state.run_id] = results
     return {
@@ -210,6 +253,8 @@ def run_collab_analyze(
         "task_state": snap,
         "failed_agents": failed,
         "collab_trace": collab_trace,
+        "run_events": run_events,
+        "context_hash": compiled.context_hash,
     }
 
 
@@ -267,6 +312,16 @@ def run_collab(
         planning_run=out,
     )
     out["collab_trace"] = collab_trace
+    run_events = list(analysis.get("run_events") or [])
+    out["run_events"] = run_events
+    out["context_hash"] = analysis.get("context_hash")
+    run_trace = merge_run_trace(
+        run_events=run_events,
+        collab_trace=collab_trace,
+        strategy_trace=collab_trace.get("strategy_trace"),
+        run_id=str(out.get("run_id") or analysis.get("run_id") or ""),
+    )
+    out["run_trace"] = run_trace
 
     # Keep collab store in sync with planning outcome.
     snap = dict(analysis.get("task_state") or {})
@@ -283,11 +338,11 @@ def run_collab(
     snap["current_stage"] = out.get("stage") or snap.get("current_stage")
     snap["planning_run_id"] = out.get("run_id")
     snap["collab_trace"] = collab_trace
+    snap["run_events"] = run_events
+    snap["run_trace"] = run_trace
     _COLLAB_STORE[analysis["run_id"]] = snap
     out["task_state"] = snap
     return out
-
-
 def get_collab_run(run_id: str) -> Optional[Dict[str, Any]]:
     """Lookup collab TaskState snapshot (also tries S1 planning run_id)."""
     if run_id in _COLLAB_STORE:

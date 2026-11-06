@@ -181,6 +181,8 @@ def run_global_reschedule(
         baseline_solver=baseline_solver,
         rescheduled_solver=new_solver,
         extra={"event_type": event_type, **event_meta},
+        baseline_gantt=baseline_gantt_data,
+        new_gantt=new_gantt,
     )
     return _ok_payload(results, impact)
 
@@ -325,6 +327,8 @@ def run_planned_downtime(
         baseline_solver=baseline_solver,
         rescheduled_solver=new_solver,
         extra={"event_type": "planned_downtime", "downtime_blocks": downtime_blocks},
+        baseline_gantt=baseline_gantt,
+        new_gantt=new_gantt,
     )
     return _ok_payload(results, impact)
 
@@ -560,6 +564,62 @@ def run_insert_order(
     return _ok_payload(results, impact, updated_jobs=updated_jobs)
 
 
+def _freeze_ops_for_breakdown(
+    r0_gantt: List[Dict[str, Any]],
+    *,
+    machine_id: int,
+    breakdown_start: float,
+    freeze_time: float,
+    num_machines: int,
+    num_jobs: int,
+) -> Tuple[List[Dict[str, Any]], List[float], List[int]]:
+    """
+    构造故障重排的冻结段。
+
+    故障机台：只有「完全在故障开始前结束」的工序可冻结；
+    跨入/落在故障窗内的工序整段进入残段重排（禁止把原计划冻进故障窗）。
+    其它机台：仍按 start < freeze_time 冻结已开工工序。
+    """
+    frozen_ops: List[Dict[str, Any]] = []
+    machine_ready = [0.0] * max(0, int(num_machines))
+    completed_count = [0] * max(0, int(num_jobs))
+
+    ordered = sorted(
+        r0_gantt,
+        key=lambda x: (
+            int(x.get("job_id", 0)),
+            int(x.get("operation_id", x.get("id", 0))),
+            float(x.get("start", 0)),
+        ),
+    )
+    for op in ordered:
+        mid = int(op.get("machine_id", op.get("machine", 0)))
+        start = float(op.get("start", 0))
+        end = float(op.get("end", 0))
+        jid = int(op.get("job_id", 0))
+        if jid < 0 or jid >= len(completed_count):
+            continue
+
+        if mid == machine_id:
+            # 不得冻结任何与故障窗相交的工序（end > breakdown_start）
+            if end <= breakdown_start + 1e-9:
+                frozen = copy.deepcopy(op)
+                frozen_ops.append(frozen)
+                completed_count[jid] += 1
+                if 0 <= mid < len(machine_ready):
+                    machine_ready[mid] = max(machine_ready[mid], end)
+            continue
+
+        if start < freeze_time:
+            frozen = copy.deepcopy(op)
+            frozen_ops.append(frozen)
+            completed_count[jid] += 1
+            if 0 <= mid < len(machine_ready):
+                machine_ready[mid] = max(machine_ready[mid], end)
+
+    return frozen_ops, machine_ready, completed_count
+
+
 def run_machine_breakdown(
     base_jobs: List[Any],
     machine_id: int,
@@ -608,14 +668,29 @@ def run_machine_breakdown(
         breakdown_duration=breakdown_duration,
     )
 
-    frozen_ops = [op for op in r0_gantt if float(op.get("start", 0)) < freeze_time]
-    machine_ready = [0.0] * base_problem.num_machines
-    completed_count = [0] * base_problem.num_jobs
-    for op in frozen_ops:
-        machine_ready[int(op["machine_id"])] = max(machine_ready[int(op["machine_id"])], float(op["end"]))
-        completed_count[int(op["job_id"])] += 1
+    frozen_ops, machine_ready, completed_count = _freeze_ops_for_breakdown(
+        r0_gantt,
+        machine_id=machine_id,
+        breakdown_start=breakdown_start,
+        freeze_time=freeze_time,
+        num_machines=base_problem.num_machines,
+        num_jobs=base_problem.num_jobs,
+    )
     if 0 <= machine_id < len(machine_ready):
         machine_ready[machine_id] = max(machine_ready[machine_id], breakdown_end)
+
+    # 残段求解也注入故障停机窗，防止求解器排进故障期
+    repair_resource_config = merge_downtime_blocks(
+        resource_config,
+        [
+            {
+                "machine_id": machine_id,
+                "start": breakdown_start,
+                "end": breakdown_end,
+                "label": "machine_breakdown",
+            }
+        ],
+    )
 
     residual_jobs: List[Job] = []
     residual_index_to_job_id: Dict[int, int] = {}
@@ -629,6 +704,16 @@ def run_machine_breakdown(
             freeze_time,
             max([float(op["end"]) for op in frozen_ops if int(op["job_id"]) == jid], default=0.0),
         )
+        # 仅当首道残段「只能」上故障机台时，才等到修复完成；
+        # 有替代机台（如 M-4）则可从 freeze 起立刻开工，由 machine_ready/停机窗挡住故障机。
+        first = remain[0]
+        cands = (
+            first.candidate_machines()
+            if hasattr(first, "candidate_machines")
+            else [int(getattr(first, "machine_id", machine_id))]
+        )
+        if cands and all(int(m) == machine_id for m in cands):
+            ready = max(ready, breakdown_end)
         residual_jobs.append(
             Job(
                 tasks=remain,
@@ -649,7 +734,7 @@ def run_machine_breakdown(
         instance_name="Breakdown Repair",
         initial_machine_ready=machine_ready,
     )
-    apply_downtime_blocks(residual_problem, resource_config)
+    apply_downtime_blocks(residual_problem, repair_resource_config)
     try:
         solver_id = resolve_solver_id(solver_id)
     except ValueError:
@@ -659,7 +744,7 @@ def run_machine_breakdown(
         [solver_id],
         residual_problem,
         weights=weights,
-        resource_config=resource_config,
+        resource_config=repair_resource_config,
         random_seed=random_seed,
     )
 

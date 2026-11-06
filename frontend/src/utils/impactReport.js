@@ -3,7 +3,16 @@
 import { deferInsertToTailGantt } from './ganttInsertDefer.js'
 import { propagateBreakdownOnGantt } from './ganttPropagate.js'
 
-export const DUAL_GANTT_EVENT_TYPES = ['insert_order', 'machine_breakdown', 'due_date_change']
+export const DUAL_GANTT_EVENT_TYPES = [
+  'insert_order',
+  'machine_breakdown',
+  'due_date_change',
+  'planned_downtime',
+  'material_delay',
+  'priority_change',
+  'order_cancel',
+  'quantity_change',
+]
 
 export function impactHasPayload(obj) {
   if (!obj || typeof obj !== 'object') return false
@@ -133,6 +142,14 @@ export function effectiveR2Gantt(impact, results, snapshotResults = null) {
 export function effectiveR1Gantt(impact, opts = {}) {
   const ir = impact || {}
   if (Array.isArray(ir.r1_gantt) && ir.r1_gantt.length) return ir.r1_gantt
+  // 扩展事件：无独立 R1 时左图用原计划 R0
+  if (
+    Array.isArray(ir.r0_gantt)
+    && ir.r0_gantt.length
+    && ['planned_downtime', 'material_delay', 'priority_change', 'order_cancel', 'quantity_change'].includes(ir.event_type)
+  ) {
+    return ir.r0_gantt
+  }
 
   if (ir.event_type === 'due_date_change') {
     return baselineGanttFrom(ir, opts)

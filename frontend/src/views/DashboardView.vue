@@ -121,67 +121,8 @@
         <span v-if="execution.status === 'idle'" class="hint-text">开始执行后红线将随仿真时刻移动</span>
       </div>
 
-      <el-divider v-if="showMesContext" content-position="left">数字孪生车间</el-divider>
-
-      <template v-if="showMesContext">
-        <el-progress
-          v-if="unifiedMakespan > 0"
-          :percentage="mesProgressPercent"
-          :stroke-width="10"
-          class="mt"
-        />
-        <DigitalTwinPanel
-          class="mt"
-          :machines="twinMachines"
-          :agvs="twinAux.agvs"
-          :staff="twinAux.staff"
-        />
-        <el-row :gutter="12" class="mt">
-          <el-col :lg="12" :md="24">
-            <el-card shadow="never">
-              <template #header><div class="h2">机器状态（与甘特同步）</div></template>
-              <el-table :data="twinMachines" size="small" max-height="280">
-                <el-table-column prop="id" label="ID" width="70" />
-                <el-table-column prop="status" label="状态" width="90">
-                  <template #default="{ row }">
-                    <el-tag :type="row.status === 'running' ? 'success' : 'info'">{{ row.status }}</el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="current_job" label="当前工单" min-width="120" />
-              </el-table>
-            </el-card>
-          </el-col>
-          <el-col :lg="6" :md="12" :sm="24">
-            <el-card shadow="never">
-              <template #header><div class="h2">AGV 车队</div></template>
-              <el-table :data="twinAux.agvs" size="small" max-height="280">
-                <el-table-column prop="id" label="AGV" width="70" />
-                <el-table-column prop="status" label="状态" />
-              </el-table>
-            </el-card>
-          </el-col>
-          <el-col :lg="6" :md="12" :sm="24">
-            <el-card shadow="never">
-              <template #header><div class="h2">在岗人员</div></template>
-              <el-table :data="twinAux.staff" size="small" max-height="280" empty-text="当前时刻无派工">
-                <el-table-column prop="name" label="姓名" width="72" />
-                <el-table-column label="机台" width="72">
-                  <template #default="{ row }">M{{ row.machine_id }}</template>
-                </el-table-column>
-                <el-table-column prop="job_name" label="工单" min-width="90" />
-                <el-table-column label="技能" min-width="90">
-                  <template #default="{ row }">
-                    {{ (row.skills || []).join('、') || '-' }}
-                  </template>
-                </el-table-column>
-              </el-table>
-            </el-card>
-          </el-col>
-        </el-row>
-      </template>
-
       <el-alert
-        v-else
+        v-if="!showMesContext"
         type="info"
         show-icon
         :closable="false"
@@ -211,18 +152,69 @@
       <MesReschedulePanel
         :execution="execution"
         @rescheduled="onRescheduled"
+        @refresh-execution="loadExecution"
       />
     </el-card>
 
-    <el-card shadow="never" class="mt">
+    <el-card v-if="showMesContext" shadow="never" class="mt">
       <template #header>
         <div class="row">
-          <div class="h">扰动剧本</div>
-          <div class="spacer" />
-          <el-tag type="info" effect="plain">可配置 JSON · 一键运行</el-tag>
+          <div class="h">数字孪生车间</div>
         </div>
       </template>
-      <ScenarioPanel @ran="onScenarioRan" />
+      <el-progress
+        v-if="unifiedMakespan > 0"
+        :percentage="mesProgressPercent"
+        :stroke-width="10"
+      />
+      <DigitalTwinPanel
+        class="mt"
+        :machines="twinMachines"
+        :agvs="twinAux.agvs"
+        :staff="twinAux.staff"
+      />
+      <el-row :gutter="12" class="mt">
+        <el-col :lg="12" :md="24">
+          <el-card shadow="never">
+            <template #header><div class="h2">机器状态（与甘特同步）</div></template>
+            <el-table :data="twinMachines" size="small" max-height="280">
+              <el-table-column prop="id" label="ID" width="70" />
+              <el-table-column prop="status" label="状态" width="90">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === 'running' ? 'success' : 'info'">{{ row.status }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="current_job" label="当前工单" min-width="120" />
+            </el-table>
+          </el-card>
+        </el-col>
+        <el-col :lg="6" :md="12" :sm="24">
+          <el-card shadow="never">
+            <template #header><div class="h2">AGV 车队</div></template>
+            <el-table :data="twinAux.agvs" size="small" max-height="280">
+              <el-table-column prop="id" label="AGV" width="70" />
+              <el-table-column prop="status" label="状态" />
+            </el-table>
+          </el-card>
+        </el-col>
+        <el-col :lg="6" :md="12" :sm="24">
+          <el-card shadow="never">
+            <template #header><div class="h2">在岗人员</div></template>
+            <el-table :data="twinAux.staff" size="small" max-height="280" empty-text="当前时刻无派工">
+              <el-table-column prop="name" label="姓名" width="72" />
+              <el-table-column label="机台" width="72">
+                <template #default="{ row }">M{{ row.machine_id }}</template>
+              </el-table-column>
+              <el-table-column prop="job_name" label="工单" min-width="90" />
+              <el-table-column label="技能" min-width="90">
+                <template #default="{ row }">
+                  {{ (row.skills || []).join('、') || '-' }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </el-col>
+      </el-row>
     </el-card>
 
   </div>
@@ -234,7 +226,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { api } from '../api/client'
 import MesReschedulePanel from '../components/MesReschedulePanel.vue'
-import ScenarioPanel from '../components/ScenarioPanel.vue'
 import ExecutionGanttChart from '../components/ExecutionGanttChart.vue'
 import DigitalTwinPanel from '../components/DigitalTwinPanel.vue'
 import { useResultsStore } from '../stores/useResultsStore'
@@ -586,13 +577,6 @@ function onRescheduled(resultBundle) {
     )
   }
   fetchTwinAuxiliary()
-}
-
-function onScenarioRan(data) {
-  if (data?.impact) {
-    onRescheduled({ impact_report: data.impact })
-  }
-  refreshAll()
 }
 
 async function pauseExecution() {

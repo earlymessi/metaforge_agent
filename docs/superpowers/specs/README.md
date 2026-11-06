@@ -10,8 +10,11 @@
 | [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) | **参数化 SchedulingStrategy（S1 已闭环）** |
 | [2026-08-03-planning-collab-multiagent-design.md](2026-08-03-planning-collab-multiagent-design.md) | **S2 Planning Collab Multi-Agent（已闭环）** |
 | [2026-08-03-planning-frontend-modes-design.md](2026-08-03-planning-frontend-modes-design.md) | **S3 前端三模式 + Package 结果页（已闭环）** |
-| [2026-08-03-sim-scenario-compare-design.md](2026-08-03-sim-scenario-compare-design.md) | **S4 仿真对接 + 扰动剧本 + R0/R1/R2 对比（已闭环）** |
+| [2026-08-03-sim-scenario-compare-design.md](2026-08-03-sim-scenario-compare-design.md) | **S4 仿真对接 + R0/R1/R2 对比（已闭环；扰动剧本已移除）** |
 | [2026-08-03-events-collab-migration-design.md](2026-08-03-events-collab-migration-design.md) | **Events 同构迁移（已闭环）** |
+| [2026-08-09-fab-mini-scenario-physics-design.md](2026-08-09-fab-mini-scenario-physics-design.md) | Mini-Fab 三工区物理约束（建模前置） |
+| [2026-08-09-fab-scenario-isolation-design.md](2026-08-09-fab-scenario-isolation-design.md) | FAB 场景与通用 JSSP 隔离 + 场景包契约 |
+| [2026-08-09-fab-research-lab-design.md](2026-08-09-fab-research-lab-design.md) | **FAB 研究台独立页（业务→建模→求解→训练占位）** |
 
 **现行能力与 API** 以 [`../../智能体功能清单.md`](../../智能体功能清单.md) 为准。  
 **S1** 以 [2026-08-03-parameterized-scheduling-strategy-design.md](2026-08-03-parameterized-scheduling-strategy-design.md) 为准。  

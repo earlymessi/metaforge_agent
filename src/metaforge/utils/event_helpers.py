@@ -2,9 +2,40 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+import copy
+from typing import Any, Dict, List, Optional, Tuple
 
 from metaforge.utils.delivery_prediction import build_commitment_changes, compute_delivery_predictions
+
+
+def _op_key(op: Dict[str, Any]) -> Tuple[int, int]:
+    return (
+        int(op.get("job_id", 0)),
+        int(op.get("operation_id", op.get("id", 0))),
+    )
+
+
+def rescheduled_op_keys(r0: List[Dict[str, Any]], r2: List[Dict[str, Any]]) -> List[str]:
+    r0_map = {_op_key(op): op for op in r0 or []}
+    keys: List[str] = []
+    for op in r2 or []:
+        k = _op_key(op)
+        prev = r0_map.get(k)
+        if not prev:
+            keys.append(f"{k[0]}:{k[1]}")
+            continue
+        if (
+            abs(float(prev.get("start", 0)) - float(op.get("start", 0))) > 1e-6
+            or abs(float(prev.get("end", 0)) - float(op.get("end", 0))) > 1e-6
+            or int(prev.get("machine_id", -1)) != int(op.get("machine_id", -1))
+        ):
+            keys.append(f"{k[0]}:{k[1]}")
+    return keys
+
+
+def _gantt_makespan(gantt: List[Dict[str, Any]]) -> float:
+    ends = [float(op.get("end") or 0) for op in (gantt or [])]
+    return max(ends) if ends else 0.0
 
 
 def job_completion_map(schedule_data: List[Dict[str, Any]]) -> Dict[int, float]:
@@ -61,6 +92,8 @@ def build_delay_impact_report(
     baseline_solver: str,
     rescheduled_solver: str,
     extra: Optional[Dict[str, Any]] = None,
+    baseline_gantt: Optional[List[Dict[str, Any]]] = None,
+    new_gantt: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     delays = []
     for jid, old_end in baseline_completion.items():
@@ -85,4 +118,45 @@ def build_delay_impact_report(
     }
     if extra:
         report.update(extra)
+
+    # 扩展事件也带对比甘特：左=原计划，右=重排（无独立 R1 扰动态时 r1=r0）
+    if baseline_gantt is not None and new_gantt is not None:
+        r0 = copy.deepcopy(baseline_gantt)
+        r2 = copy.deepcopy(new_gantt)
+        r0_ms = _gantt_makespan(r0)
+        r2_ms = _gantt_makespan(r2)
+        report["r0_gantt"] = r0
+        report["r1_gantt"] = copy.deepcopy(r0)
+        report["r2_gantt"] = r2
+        report["scenarios"] = {
+            "r0": {"label": "原计划", "makespan": r0_ms},
+            "r1": {"label": "原计划", "makespan": r0_ms},
+            "r2": {"label": "重排后", "makespan": r2_ms},
+        }
+        layers = dict(report.get("gantt_layers") or {})
+        layers["rescheduled_op_keys"] = rescheduled_op_keys(r0, r2)
+        blocks = (extra or {}).get("downtime_blocks") or report.get("downtime_blocks") or []
+        if blocks:
+            windows = []
+            for b in blocks:
+                if not isinstance(b, dict) or b.get("machine_id") is None:
+                    continue
+                windows.append(
+                    {
+                        "machine_id": int(b["machine_id"]),
+                        "start": float(b.get("start", 0)),
+                        "end": float(b.get("end", 0)),
+                        "label": str(b.get("label") or "停机"),
+                    }
+                )
+            if windows:
+                layers["downtime_windows"] = windows
+                # 复用故障窗渲染：取第一段
+                layers["breakdown_window"] = {
+                    "machine_id": windows[0]["machine_id"],
+                    "start": windows[0]["start"],
+                    "end": windows[0]["end"],
+                    "label": windows[0].get("label") or "停机",
+                }
+        report["gantt_layers"] = layers
     return report

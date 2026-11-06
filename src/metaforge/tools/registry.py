@@ -46,8 +46,7 @@ def list_tools() -> List[Dict[str, Any]]:
 
 
 def run_tool(name: str, params: Dict[str, Any], ctx: ToolContext) -> ToolResult:
-    spec = get_tool(name)
-    try:
-        return spec.handler(params or {}, ctx)
-    except Exception as e:
-        return ToolResult(ok=False, error=str(e))
+    """Execute via Harness ToolExecutor (risk / schema / timeout / retry)."""
+    from metaforge.harness.tool_executor import execute_tool
+
+    return execute_tool(name, params or {}, ctx)

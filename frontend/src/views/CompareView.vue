@@ -18,7 +18,7 @@
         type="info"
         show-icon
         :closable="false"
-        title="暂无对比数据。请先在看板完成异常重排或运行扰动剧本，再打开本页。"
+        title="暂无对比数据。请先在看板完成异常重排（或预约动态事件触发），再打开本页。"
       />
 
       <template v-else>

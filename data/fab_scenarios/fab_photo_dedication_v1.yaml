@@ -1,0 +1,64 @@
+schema_version: "1"
+scenario_id: fab_photo_dedication_v1
+domain: fab
+area: photolithography
+title: 光刻粘机 Mini-Fab
+physics_refs:
+  - "Deenen et al., IEEE TSM 2023: Real-world photolithography scheduling with CP (reticles/pods; 10.1109/TSM.2023.3304517) — boundary ref only"
+  - "Choi-style mini-fab: reentrant photo–etch–clean + machine dedication (overlay / natural bias)"
+  - "WSC 2023: RL for photolithography schedules vs dispatching rule set"
+paper_alignment:
+  reproduce_level: semantic_mini_fab
+  primary_papers:
+    - { venue: "IEEE TSM", year: 2023, note: "真厂光刻：CP vs MIP；我们一期不建模 reticle/pod，只对齐「光刻区硬约束+实例章写法」" }
+    - { venue: "WSC", year: 2023, note: "规则基线 vs 学习选规则 — 对照实验范式" }
+  what_we_reproduce:
+    - "re-entrant layers back to photo"
+    - "machine dedication after mark layer (natural bias → overlay risk)"
+    - "baseline rules (SPT/EDD/MWKR) vs metaheuristics (TS/GA)"
+  what_we_do_not_reproduce:
+    - "reticle + pod dual resources / transfer times (TSM 2023)"
+    - "real fab instance pack from a manufacturer"
+    - "overlay nm / metrology closed loop"
+  default_compare:
+    - dedication_bind_spt
+    - dedication_bind_edd
+    - dedication_bind_ts
+out_of_scope:
+  - "overlay nm simulation"
+  - "reticle full library / pods"
+  - "track wafer-level scheduling"
+  - "AMHS / reticle transporters"
+entities:
+  machines:
+    - { id: P1, type: stepper }
+    - { id: P2, type: stepper }
+    - { id: E1, type: etcher }
+    - { id: C1, type: cleaner }
+  families: []
+  lots:
+    - id: L1
+      release: 0
+      ops:
+        - { id: photo_L1, process_area: photo, layer_index: 1, is_dedication_mark: true, machine_options: [P1, P2], duration: 5 }
+        - { id: etch_1, process_area: etch, machine_id: E1, duration: 3 }
+        - { id: clean_1, process_area: clean, machine_id: C1, duration: 2 }
+        - { id: photo_L2, process_area: photo, layer_index: 2, machine_options: [P1, P2], duration: 5 }
+        - { id: etch_2, process_area: etch, machine_id: E1, duration: 3 }
+        - { id: photo_L3, process_area: photo, layer_index: 3, machine_options: [P1, P2], duration: 5 }
+    - id: L2
+      release: 1
+      ops:
+        - { id: photo_L1, process_area: photo, layer_index: 1, is_dedication_mark: true, machine_options: [P1, P2], duration: 4 }
+        - { id: etch_1, process_area: etch, machine_id: E1, duration: 3 }
+        - { id: photo_L2, process_area: photo, layer_index: 2, machine_options: [P1, P2], duration: 4 }
+constraints_hard:
+  - type: photo_machine_dedication
+constraints_soft:
+  - type: dedication_load_balance
+    penalty: 1.0
+objectives_default:
+  makespan: 1.0
+solver_hint:
+  preferred_primary: ["dedication_bind_spt", "dedication_bind_ts"]
+  notes: "dedication: bind later photo ops to mark machine; reuse registry solvers"

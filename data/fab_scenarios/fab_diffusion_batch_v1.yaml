@@ -1,0 +1,53 @@
+schema_version: "1"
+scenario_id: fab_diffusion_batch_v1
+domain: fab
+area: diffusion_furnace
+title: 扩散炉同族批处理 Mini-Fab
+physics_refs:
+  - "Wu et al., EJOR 2022: Job scheduling of diffusion furnaces in semiconductor fabrication facilities (10.1016/j.ejor.2021.09.044)"
+  - "Yang et al., EJOR 2022: Parallel-batching with non-identical sizes & incompatible families (10.1016/j.ejor.2022.03.027)"
+  - "arXiv:2410.11981 (2024): Parallel batch scheduling with incompatible job families via CP (diffusion motivation)"
+paper_alignment:
+  reproduce_level: semantic_mini_fab
+  # semantic_mini_fab = 约束形态与近年论文一致；非复刻真厂脱敏实例 / 非 CP·MIP 最优求解
+  primary_papers:
+    - { venue: "EJOR", year: 2022, note: "炉管批+重入/时间窗类约束；产线实现对照" }
+    - { venue: "EJOR", year: 2022, note: "不兼容族 + 容量 + 批同步；精确/启发式对照" }
+  what_we_reproduce:
+    - "incompatible job families (同 recipe 才可同炉)"
+    - "p-batch capacity (max_batch_size)"
+    - "batch synchronized start/end"
+  what_we_do_not_reproduce:
+    - "真厂 WIP / 日产能目标联立"
+    - "column generation / B&P / CP 最优解"
+    - "炉管 CFD / 真实 recipe 化学库"
+  default_compare:
+    - batch_construct
+out_of_scope:
+  - "furnace CFD / thermal field"
+  - "cluster tool robot scheduling"
+  - "full recipe chemistry library"
+entities:
+  machines:
+    - { id: F1, type: batch_furnace, max_batch_size: 4 }
+    - { id: F2, type: batch_furnace, max_batch_size: 3 }
+  families:
+    - { id: ox_a, process_time: 8.0 }
+    - { id: ox_b, process_time: 10.0 }
+  lots:
+    - { id: L1, family_id: ox_a, release: 0, ops: [{ id: diffusion, process_area: diffusion, machine_options: [F1, F2], duration: 8 }] }
+    - { id: L2, family_id: ox_a, release: 0.5, ops: [{ id: diffusion, process_area: diffusion, machine_options: [F1, F2], duration: 8 }] }
+    - { id: L3, family_id: ox_b, release: 0, ops: [{ id: diffusion, process_area: diffusion, machine_options: [F1, F2], duration: 10 }] }
+    - { id: L4, family_id: ox_a, release: 1.0, ops: [{ id: diffusion, process_area: diffusion, machine_options: [F1, F2], duration: 8 }] }
+constraints_hard:
+  - type: batch_same_family
+  - type: batch_capacity
+  - type: batch_synchronized
+constraints_soft:
+  - type: prefer_batch_fill
+    penalty: 0.5
+objectives_default:
+  makespan: 1.0
+solver_hint:
+  preferred_primary: ["batch_construct"]
+  notes: "batch semantics via fab.evaluate / batch_construct; do not alter JobShopProblem.evaluate"

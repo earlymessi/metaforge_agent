@@ -1,0 +1,63 @@
+schema_version: "1"
+scenario_id: fab_etch_timelink_v1
+domain: fab
+area: etch_timelink
+title: 刻蚀/清洗时间窗 Mini-Fab
+physics_refs:
+  - "Elaoud et al. / Flexciton–Renesas, J. Manuf. Syst. 2022: clean+diffusion batch + timelinks vs factory dispatch (industrial)"
+  - "J. Intell. Manuf. 2024: time-constraint production control in semiconductor manufacturing (ML assist; MIP/CP dominant in lit.)"
+  - "WSC 2021: Multi-objective parallel batch with job timelink constraints"
+paper_alignment:
+  reproduce_level: semantic_mini_fab
+  primary_papers:
+    - { venue: "JMS", year: 2022, note: "湿清→炉管链路 + timelink 违反作为目标/硬约束；对照工厂规则派工" }
+    - { venue: "JIM", year: 2024, note: "simple time constraint = 相邻工序上界；现场多为规则+经验" }
+  what_we_reproduce:
+    - "max_lag between wet_clean and diffusion (simple timelink)"
+    - "parallel furnaces so a feasible schedule exists (paper-style feasible industrial instances)"
+    - "rule/metaheuristic compare; report hard_ok + violation count"
+  what_we_do_not_reproduce:
+    - "historical factory schedule replay under uncertainty (JMS simulation methodology)"
+    - "batch cost + queue multi-objective MILP decomposition"
+    - "AWS wet-bench robot / continuous surface degradation"
+  default_compare:
+    - timelink_slack_spt
+    - timelink_edd_edd
+    - timelink_slack_ts
+  # 旧版单炉 + max_lag=1.5 对双 lot 结构性不可行；按 JMS「可求可行解」修正为双炉并行
+out_of_scope:
+  - "AWS wet-bench robot millisecond scheduling"
+  - "continuous surface degradation curves"
+  - "factory historical dispatch replay"
+entities:
+  machines:
+    - { id: W1, type: wet_bench }
+    - { id: F1, type: batch_furnace, max_batch_size: 4 }
+    - { id: F2, type: batch_furnace, max_batch_size: 4 }
+    - { id: E1, type: etcher }
+  families: []
+  lots:
+    - id: L1
+      release: 0
+      ops:
+        - { id: wet_clean, process_area: wet, machine_id: W1, duration: 2 }
+        - { id: diffusion, process_area: diffusion, machine_options: [F1, F2], duration: 8 }
+        - { id: etch, process_area: etch, machine_id: E1, duration: 3 }
+    - id: L2
+      release: 0.5
+      ops:
+        - { id: wet_clean, process_area: wet, machine_id: W1, duration: 2 }
+        - { id: diffusion, process_area: diffusion, machine_options: [F1, F2], duration: 8 }
+timelinks_hard:
+  - { from_op: wet_clean, to_op: diffusion, max_lag: 1.5 }
+constraints_hard:
+  - type: max_lag_between_ops
+    from_op: wet_clean
+    to_op: diffusion
+    max_lag: 1.5
+constraints_soft: []
+objectives_default:
+  makespan: 1.0
+solver_hint:
+  preferred_primary: ["timelink_slack_spt", "timelink_slack_ts"]
+  notes: "timelink checked in fab.evaluate; classic decoders unchanged"

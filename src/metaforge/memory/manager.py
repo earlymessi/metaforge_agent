@@ -84,8 +84,20 @@ class MemoryManager:
         self.session_id = session_id or _session_id_from(context)
         self._context = context
         self._store = _load_store(self.session_id, context)
+        self.boundary_warnings: list = []
         if context and context.get("artifacts"):
             _merge_artifacts_into_store(self._store, context.get("artifacts"))
+
+    def _check_write(self, scope: str, key: str, value: Any = None) -> None:
+        from metaforge.memory.boundary import assert_memory_write
+
+        warnings = assert_memory_write(scope, key, value)
+        if warnings:
+            self.boundary_warnings.extend(warnings)
+            if self._context is not None:
+                bucket = self._context.setdefault("memory_boundary_warnings", [])
+                if isinstance(bucket, list):
+                    bucket.extend(warnings)
 
     @classmethod
     def from_context(cls, context: Optional[Dict[str, Any]]) -> "MemoryManager":
@@ -103,10 +115,12 @@ class MemoryManager:
         return self._store.get("working", {}).get(working_key(namespace, key))
 
     def set_working(self, namespace: str, key: str, value: Any) -> None:
+        self._check_write("working", key, value)
         self._store.setdefault("working", {})[working_key(namespace, key)] = copy.deepcopy(value)
         self.flush()
 
     def patch_working(self, namespace: str, key: str, patch: Dict[str, Any]) -> Dict[str, Any]:
+        self._check_write("working", key, patch)
         wk = working_key(namespace, key)
         cur = self._store.setdefault("working", {}).get(wk)
         if not isinstance(cur, dict):
@@ -122,10 +136,12 @@ class MemoryManager:
         return dict(raw) if isinstance(raw, dict) else {}
 
     def set_scheduling(self, data: Dict[str, Any]) -> None:
+        self._check_write("scheduling", "scheduling", data)
         self._store["scheduling"] = copy.deepcopy(data)
         self.flush()
 
     def patch_scheduling(self, patch: Dict[str, Any]) -> Dict[str, Any]:
+        self._check_write("scheduling", "scheduling_patch", patch)
         cur = self.get_scheduling()
         merged = {**cur, **patch}
         self.set_scheduling(merged)
@@ -133,6 +149,7 @@ class MemoryManager:
 
     # --- episodic ---
     def append_episode(self, item: Dict[str, Any], *, max_items: int = 20) -> None:
+        self._check_write("episodic", "episode", item)
         log = self._store.setdefault("episodic", [])
         log.append(copy.deepcopy(item))
         if len(log) > max_items:

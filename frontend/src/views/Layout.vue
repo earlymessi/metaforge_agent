@@ -25,6 +25,10 @@
             <el-icon><Calendar /></el-icon>
             <span>智能排程</span>
           </el-menu-item>
+          <el-menu-item index="/fab-lab" class="nav-item">
+            <el-icon><Histogram /></el-icon>
+            <span>FAB 研究台</span>
+          </el-menu-item>
           <el-menu-item index="/reports" class="nav-item">
             <el-icon><DataAnalysis /></el-icon>
             <span>分析报表</span>
@@ -123,6 +127,7 @@ const routeTitle = computed(() => {
     '/dashboard': '生产看板',
     '/database': '数据中心',
     '/aps': '智能排程',
+    '/fab-lab': 'FAB 研究台',
     '/assistant': '智能助手',
     '/reports': '分析报表',
     '/compare': '方案对比',

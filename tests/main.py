@@ -298,6 +298,10 @@ class TaskData(BaseModel):
     quantity: Optional[int] = None
     setup_time: Optional[float] = None
     unit_time: Optional[float] = None
+    # FAB 扩展（仅 domain=fab 使用；经典算例可忽略）
+    process_area: Optional[str] = None
+    layer_index: Optional[int] = None
+    is_dedication_mark: Optional[bool] = None
 
 
 class JobData(BaseModel):
@@ -308,6 +312,9 @@ class JobData(BaseModel):
     material_arrival: Optional[float] = None  # 物料就绪后才可开工（由 enforce 或手工填写）
     bom: Optional[List[BomLine]] = None
     tasks: List[TaskData]
+    # FAB 扩展
+    job_id: Optional[str] = None
+    family_id: Optional[str] = None
 
 
 class RoutingTemplateSchema(BaseModel):
@@ -342,6 +349,11 @@ class CompareRequest(BaseModel):
     random_seed: Optional[int] = None
     enforce_material: bool = False
     solver_params: Optional[Dict[str, Dict[str, Any]]] = None
+    # FAB 场景（与算例库隔离；缺省不影响经典 JSSP）
+    domain: Optional[str] = None
+    scenario_id: Optional[str] = None
+    fab_meta: Optional[Dict[str, Any]] = None
+    strategy_defaults: Optional[Dict[str, Any]] = None
 
 
 class SingleSolverRunRequest(BaseModel):
@@ -575,6 +587,121 @@ def get_benchmarks():
     return {"files": sorted(files)}
 
 
+# --- FAB scenario API (isolated from benchmarks / JSSP file mode) ---
+
+@app.get("/api/fab/scenarios")
+def list_fab_scenarios():
+    from metaforge.fab.loader import list_scenario_summaries
+
+    return {"scenarios": list_scenario_summaries()}
+
+
+@app.get("/api/fab/scenarios/{scenario_id}")
+def get_fab_scenario(scenario_id: str):
+    from metaforge.fab.loader import load_scenario
+
+    try:
+        pack = load_scenario(scenario_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"FAB scenario not found: {scenario_id}")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return pack.raw
+
+
+@app.post("/api/fab/scenarios/{scenario_id}/load")
+def load_fab_scenario_for_planning(scenario_id: str):
+    from metaforge.fab.loader import load_scenario
+    from metaforge.fab.to_planning import pack_to_planning
+
+    try:
+        pack = load_scenario(scenario_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"FAB scenario not found: {scenario_id}")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return pack_to_planning(pack)
+
+
+class FabResearchSolveRequest(BaseModel):
+    scenario_id: str
+    method: str
+    params: Optional[Dict[str, Any]] = None
+    # 研究台建模页编辑后的草稿（jobs / machines / strategy_defaults / fab_meta）
+    model: Optional[Dict[str, Any]] = None
+
+
+class FabResearchCompareRequest(BaseModel):
+    scenario_id: str
+    methods: List[str]
+    params: Optional[Dict[str, Any]] = None
+    model: Optional[Dict[str, Any]] = None
+
+
+class FabResearchTrainRequest(BaseModel):
+    scenario_id: str
+    algo: str = "dqn"
+    epochs: int = 100
+    params: Optional[Dict[str, Any]] = None
+
+
+@app.get("/api/fab/research/methods")
+def list_fab_research_methods(area: Optional[str] = None):
+    from metaforge.fab.research import list_methods
+
+    return {"methods": list_methods(area)}
+
+
+@app.post("/api/fab/research/solve")
+def fab_research_solve(req: FabResearchSolveRequest):
+    from metaforge.fab.research import run_research_solve
+
+    try:
+        return run_research_solve(
+            req.scenario_id,
+            req.method,
+            params=req.params,
+            model=req.model,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.post("/api/fab/research/compare")
+def fab_research_compare(req: FabResearchCompareRequest):
+    from metaforge.fab.research import run_research_compare
+
+    try:
+        return run_research_compare(
+            req.scenario_id,
+            req.methods,
+            model=req.model,
+            params=req.params,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.post("/api/fab/research/train")
+def fab_research_train(req: FabResearchTrainRequest):
+    """一期占位：二期接光刻 Mini 轻量 RL。"""
+    return {
+        "status": "not_implemented",
+        "phase": 2,
+        "message": "训练入口已预留，一期仅建模+启发式求解；二期将支持光刻 Mini 实例轻量 RL。",
+        "request": {
+            "scenario_id": req.scenario_id,
+            "algo": req.algo,
+            "epochs": req.epochs,
+            "params": req.params or {},
+        },
+    }
+
+
 # --- [新增] 能耗管理相关 API ---
 
 @app.get("/api/resources/config")
@@ -799,6 +926,78 @@ async def execution_state():
     return await get_state(execution_collection)
 
 
+class ScheduleBreakdownRequest(BaseModel):
+    machine_id: int = 0
+    breakdown_start: float
+    breakdown_duration: float = 4.0
+
+
+class ScheduleEventRequest(BaseModel):
+    event_type: str
+    trigger_at: float
+    params: dict = {}
+
+
+@app.post("/api/execution/schedule_event")
+async def execution_schedule_event(req: ScheduleEventRequest):
+    """预约动态事件：仿真时钟到达后自动 dispatch 重排并暂停（事件注入器，非 Agent）。"""
+    from metaforge.services.production_execution import schedule_event
+
+    try:
+        return await schedule_event(
+            execution_collection,
+            event_type=req.event_type,
+            trigger_at=req.trigger_at,
+            params=req.params or {},
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post("/api/execution/cancel_scheduled_event")
+async def execution_cancel_scheduled_event():
+    from metaforge.services.production_execution import cancel_scheduled_event
+
+    try:
+        return await cancel_scheduled_event(execution_collection)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post("/api/execution/schedule_breakdown")
+async def execution_schedule_breakdown(req: ScheduleBreakdownRequest):
+    """兼容旧 API：预约故障。"""
+    from metaforge.services.production_execution import schedule_breakdown
+
+    try:
+        return await schedule_breakdown(
+            execution_collection,
+            machine_id=req.machine_id,
+            breakdown_start=req.breakdown_start,
+            breakdown_duration=req.breakdown_duration,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post("/api/execution/cancel_scheduled_breakdown")
+async def execution_cancel_scheduled_breakdown():
+    from metaforge.services.production_execution import cancel_scheduled_breakdown
+
+    try:
+        return await cancel_scheduled_breakdown(execution_collection)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post("/api/execution/ack_auto_reschedule")
+async def execution_ack_auto_reschedule():
+    """前端已展示自动重排结果后确认消费通知。"""
+    from metaforge.services.production_execution import ack_auto_reschedule
+
+    return await ack_auto_reschedule(execution_collection)
+
+
 @app.post("/api/execution/start")
 async def execution_start(req: ExecutionStartRequest):
     from metaforge.services.production_execution import start_execution
@@ -835,106 +1034,6 @@ async def execution_start_from_package(body: Dict = Body(...)):
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@app.get("/api/scenarios/presets")
-async def scenarios_presets():
-    from metaforge.scenario.presets import list_preset_scenarios
-
-    return {"items": list_preset_scenarios()}
-
-
-@app.get("/api/scenarios")
-async def scenarios_list():
-    from metaforge.scenario.store import default_store
-
-    return {"items": default_store.list()}
-
-
-@app.post("/api/scenarios")
-async def scenarios_create(body: Dict = Body(...)):
-    from metaforge.scenario.store import default_store
-
-    try:
-        return default_store.create(body)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
-
-@app.get("/api/scenarios/{scenario_id}")
-async def scenarios_get(scenario_id: str):
-    from metaforge.scenario.store import default_store
-
-    item = default_store.get(scenario_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="scenario not found")
-    return item
-
-
-@app.put("/api/scenarios/{scenario_id}")
-async def scenarios_update(scenario_id: str, body: Dict = Body(...)):
-    from metaforge.scenario.store import default_store
-
-    try:
-        return default_store.update(scenario_id, body)
-    except KeyError:
-        raise HTTPException(status_code=404, detail="scenario not found") from None
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-
-
-@app.delete("/api/scenarios/{scenario_id}")
-async def scenarios_delete(scenario_id: str):
-    from metaforge.scenario.store import default_store
-
-    if not default_store.delete(scenario_id):
-        raise HTTPException(status_code=404, detail="scenario not found")
-    return {"ok": True}
-
-
-@app.post("/api/scenarios/{scenario_id}/run")
-async def scenarios_run(scenario_id: str, body: Dict = Body(default={})):
-    """Run a saved scenario against current MES execution context."""
-    from metaforge.scenario.store import default_store
-    from metaforge.scenario.runner import run_scenario_async
-    from metaforge.services.production_execution import get_state, tick_sim_time
-
-    scenario = default_store.get(scenario_id)
-    if not scenario:
-        raise HTTPException(status_code=404, detail="scenario not found")
-
-    exec_doc = await get_state(execution_collection)
-    if exec_doc.get("status") in ("running", "paused"):
-        exec_doc = await tick_sim_time(execution_collection, exec_doc)
-
-    base_jobs = body.get("base_jobs") or exec_doc.get("jobs_snapshot") or []
-    if not base_jobs:
-        raise HTTPException(status_code=400, detail="base_jobs required (or start execution first)")
-
-    if exec_doc.get("status") not in ("running", "paused") and not body.get("base_jobs"):
-        # Avoid silently using stale idle snapshot; require active execution unless caller passed jobs.
-        raise HTTPException(
-            status_code=400,
-            detail="请先开始 MES 执行，或在请求体中提供 base_jobs",
-        )
-
-    envelope: Dict[str, Any] = {
-        "base_jobs": base_jobs,
-        "reschedule_options": {
-            "solvers": body.get("solvers"),
-            "weights": body.get("weights"),
-            "random_seed": body.get("random_seed"),
-            "baseline_gantt": exec_doc.get("baseline_gantt"),
-            "baseline_solver": exec_doc.get("baseline_solver"),
-        },
-        "production_execution": exec_doc if exec_doc.get("status") in ("running", "paused") else None,
-    }
-
-    return await run_scenario_async(
-        scenario,
-        envelope=envelope,
-        dispatch=_event_dispatch_from_request,
-    )
 
 
 @app.post("/api/execution/pause")
@@ -1100,11 +1199,54 @@ def _run_comparison_blocking(
                 gantt, jobs_data, material_catalog
             )
 
+    fab_evaluation = None
+    if getattr(req, "domain", None) == "fab" and req.strategy_defaults and results:
+        from metaforge.strategy.evaluator import evaluate_candidates
+        from metaforge.strategy.models import SchedulingStrategy
+
+        strategy = SchedulingStrategy.from_dict(req.strategy_defaults)
+        # 与 problem_builder 一致：按 priority 降序，保证 gantt job_id 与 jobs 下标对齐
+        sorted_jobs = sorted(
+            jobs_data or [],
+            key=lambda x: int(getattr(x, "priority", 10) or 10),
+            reverse=True,
+        )
+        jobs_for_eval = [
+            j.model_dump() if hasattr(j, "model_dump") else dict(j)
+            for j in sorted_jobs
+        ]
+        candidates = []
+        for solver_id, res in results.items():
+            candidates.append(
+                {
+                    "schedule_id": solver_id,
+                    "gantt_data": res.get("gantt_data") or [],
+                    "metrics": res.get("metrics") or {},
+                }
+            )
+        fab_evaluation = evaluate_candidates(
+            strategy,
+            candidates,
+            jobs=jobs_for_eval,
+            domain="fab",
+            fab_meta=req.fab_meta,
+        )
+        rank_by_id = {row["schedule_id"]: row for row in fab_evaluation.get("ranking") or []}
+        for solver_id, res in results.items():
+            row = rank_by_id.get(solver_id)
+            if row is not None:
+                res["fab_hard_ok"] = bool(row.get("hard_ok"))
+                res["fab_score"] = row.get("score")
+
     payload: Dict[str, Any] = {"status": "success", "data": results}
     if material_check is not None:
         payload["material_check"] = material_check
     if material_enforcement is not None:
         payload["material_enforcement"] = material_enforcement
+    if fab_evaluation is not None:
+        payload["fab_evaluation"] = fab_evaluation
+        payload["domain"] = "fab"
+        payload["scenario_id"] = req.scenario_id
     return payload
 
 
@@ -2376,9 +2518,12 @@ async def planning_run(body: Dict[str, Any] = Body(...)):
 @app.post("/api/planning/collab/analyze")
 async def planning_collab_analyze(body: Dict[str, Any] = Body(...)):
     _require_planning_collab()
-    from metaforge.planning_collab.supervisor import run_collab_analyze
+    from metaforge.harness.skill import invoke_skill
+    from metaforge.skills.planning_collab import ensure_registered
 
-    return run_collab_analyze(
+    ensure_registered()
+    return invoke_skill(
+        "planning_collab.analyze",
         user_goal=body.get("user_goal") or "",
         jobs=body.get("jobs") or [],
         machines=body.get("machines") or [],
@@ -2390,9 +2535,12 @@ async def planning_collab_analyze(body: Dict[str, Any] = Body(...)):
 @app.post("/api/planning/collab/run")
 async def planning_collab_run(body: Dict[str, Any] = Body(...)):
     _require_planning_collab()
-    from metaforge.planning_collab.supervisor import run_collab
+    from metaforge.harness.skill import invoke_skill
+    from metaforge.skills.planning_collab import ensure_registered
 
-    return run_collab(
+    ensure_registered()
+    return invoke_skill(
+        "planning_collab",
         user_goal=body.get("user_goal") or "",
         jobs=body.get("jobs") or [],
         machines=body.get("machines") or [],
